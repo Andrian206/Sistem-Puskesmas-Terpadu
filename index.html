@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SIPUSKESMAS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-logo">
+                <div class="icon">
+                    <i class="fas fa-hospital"></i>
+                </div>
+                <h1>SIPUSKESMAS</h1>
+                <p>Sistem Informasi Puskesmas Terpadu</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="Masukkan email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Masukkan password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-sign-in-alt"></i> Masuk
+                </button>
+            </form>
+
+            <div id="loginError" class="hidden" style="margin-top: 15px; padding: 10px; background: #FFEBEE; color: #C62828; border-radius: 8px; text-align: center;"></div>
+
+            <!-- Demo Accounts Info -->
+            <div style="margin-top: 30px; padding: 20px; background: #F5F5F5; border-radius: 8px;">
+                <h4 style="margin-bottom: 15px; font-size: 0.9rem; color: #666;">Demo Akun (Setelah Setup):</h4>
+                <div style="font-size: 0.8rem; color: #888;">
+                    <p><strong>Admin:</strong> admin@puskesmas.id</p>
+                    <p><strong>Pendaftaran:</strong> pendaftaran@puskesmas.id</p>
+                    <p><strong>Dokter:</strong> dokter@puskesmas.id</p>
+                    <p><strong>Apoteker:</strong> apoteker@puskesmas.id</p>
+                    <p><strong>Kepala:</strong> kepala@puskesmas.id</p>
+                    <p style="margin-top: 10px; color: #E65100;">Password: password123</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        // Check if already logged in
+        async function checkAuth() {
+            const session = await checkSession();
+            if (session) {
+                redirectToDashboard();
+            }
+        }
+
+        // Redirect based on role
+        async function redirectToDashboard() {
+            const userData = await getUserRole();
+            if (!userData) {
+                console.error('User data not found');
+                return;
+            }
+
+            const roleRoutes = {
+                'admin': 'pages/admin.html',
+                'pendaftaran': 'pages/pendaftaran.html',
+                'dokter': 'pages/dokter.html',
+                'apoteker': 'pages/farmasi.html',
+                'kepala': 'pages/kepala.html'
+            };
+
+            const route = roleRoutes[userData.role];
+            if (route) {
+                window.location.href = route;
+            } else {
+                alert('Role tidak dikenali');
+            }
+        }
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+            
+            showLoading();
+            errorDiv.classList.add('hidden');
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) throw error;
+
+                await redirectToDashboard();
+            } catch (error) {
+                console.error('Login error:', error);
+                errorDiv.textContent = error.message || 'Email atau password salah';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Check auth on page load
+        checkAuth();
+    </script>
+</body>
+</html>

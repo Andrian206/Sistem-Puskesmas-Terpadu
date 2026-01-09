@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modul Dokter - SIPUSKESMAS</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-hospital"></i> SIPUSKESMAS</h2>
+                <p>Modul Dokter</p>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active" data-section="dashboard"><i class="fas fa-home icon"></i> Dashboard</a></li>
+                <li><a href="#" data-section="antrean"><i class="fas fa-user-clock icon"></i> Antrean Pasien</a></li>
+                <li><a href="#" data-section="pemeriksaan"><i class="fas fa-stethoscope icon"></i> Pemeriksaan</a></li>
+                <li><a href="#" data-section="riwayat"><i class="fas fa-history icon"></i> Riwayat Pasien</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <button class="btn btn-outline btn-block" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h1>Pemeriksaan Pasien</h1>
+                    <p id="currentDate"></p>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <div class="user-avatar" id="userAvatar">D</div>
+                        <div>
+                            <strong id="userName">dr. Dokter</strong>
+                            <p style="font-size: 0.8rem; color: #757575;" id="userPoli">Poli Umum</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Sections -->
+            <div class="content">
+                <!-- Dashboard Section -->
+                <section id="section-dashboard" class="section active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon primary"><i class="fas fa-user-clock"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalMenunggu">0</h4>
+                                <p>Menunggu Diperiksa</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon secondary"><i class="fas fa-user-check"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalSelesai">0</h4>
+                                <p>Selesai Hari Ini</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon warning"><i class="fas fa-procedures"></i></div>
+                            <div class="stat-info">
+                                <h4 id="pasienSekarang">-</h4>
+                                <p>Sedang Diperiksa</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Antrean Berikutnya -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-list-ol"></i> Antrean Berikutnya</h3>
+                            <button class="btn btn-sm btn-outline" onclick="loadAntreanDashboard()">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="antreanDashboard" class="queue-list">
+                                <div class="empty-state">
+                                    <i class="fas fa-check-circle icon"></i>
+                                    <h4>Tidak Ada Antrean</h4>
+                                    <p>Semua pasien sudah dilayani</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Antrean Section -->
+                <section id="section-antrean" class="section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-user-clock"></i> Daftar Antrean Pasien</h3>
+                            <button class="btn btn-sm btn-outline" onclick="loadAntreanFull()">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>No. Antrean</th>
+                                            <th>No. RM</th>
+                                            <th>Nama Pasien</th>
+                                            <th>Umur</th>
+                                            <th>Jenis Bayar</th>
+                                            <th>Keluhan</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelAntrean">
+                                        <tr>
+                                            <td colspan="7" class="text-center">Memuat data...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Pemeriksaan Section -->
+                <section id="section-pemeriksaan" class="section hidden">
+                    <div id="noPasienSelected" class="card">
+                        <div class="card-body">
+                            <div class="empty-state">
+                                <i class="fas fa-user-md icon"></i>
+                                <h4>Pilih Pasien dari Antrean</h4>
+                                <p>Klik tombol "Periksa" pada daftar antrean untuk memulai pemeriksaan</p>
+                                <button class="btn btn-primary mt-20" onclick="showSection('antrean')">
+                                    <i class="fas fa-list"></i> Lihat Antrean
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="formPemeriksaanContainer" class="hidden">
+                        <!-- Info Pasien -->
+                        <div class="card">
+                            <div class="card-header" style="background: #E3F2FD;">
+                                <h3><i class="fas fa-user"></i> Data Pasien</h3>
+                                <span class="badge badge-info" id="badgeAntrean">-</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-row">
+                                    <div><strong>No. RM:</strong> <span id="pemInfoRM">-</span></div>
+                                    <div><strong>Nama:</strong> <span id="pemInfoNama">-</span></div>
+                                    <div><strong>Umur:</strong> <span id="pemInfoUmur">-</span></div>
+                                    <div><strong>Jenis Kelamin:</strong> <span id="pemInfoJK">-</span></div>
+                                </div>
+                                <div class="form-row mt-10">
+                                    <div><strong>Golongan Darah:</strong> <span id="pemInfoGD">-</span></div>
+                                    <div><strong>Alergi:</strong> <span id="pemInfoAlergi" style="color: #D32F2F;">-</span></div>
+                                    <div><strong>No. BPJS:</strong> <span id="pemInfoBPJS">-</span></div>
+                                    <div><strong>Jenis Bayar:</strong> <span id="pemInfoBayar">-</span></div>
+                                </div>
+                                <div class="mt-10">
+                                    <strong>Keluhan Awal:</strong> <span id="pemInfoKeluhan">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Riwayat Medis Sebelumnya -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-history"></i> Riwayat Medis Sebelumnya</h3>
+                            </div>
+                            <div class="card-body" id="riwayatMedisContainer">
+                                <p class="text-center" style="color: #757575;">Memuat riwayat...</p>
+                            </div>
+                        </div>
+
+                        <!-- Form Pemeriksaan -->
+                        <div class="card">
+                            <div class="card-header" style="background: #E8F5E9;">
+                                <h3><i class="fas fa-notes-medical"></i> Input Pemeriksaan</h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="formPemeriksaan">
+                                    <input type="hidden" id="kunjunganId">
+                                    <input type="hidden" id="pasienId">
+
+                                    <!-- Vital Signs -->
+                                    <h4 style="margin-bottom: 15px; color: #1976D2;"><i class="fas fa-heartbeat"></i> Tanda Vital</h4>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Tekanan Darah (mmHg)</label>
+                                            <input type="text" id="tekananDarah" placeholder="120/80">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Suhu Tubuh (°C)</label>
+                                            <input type="number" id="suhu" step="0.1" placeholder="36.5">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Nadi (x/menit)</label>
+                                            <input type="number" id="nadi" placeholder="80">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Berat Badan (kg)</label>
+                                            <input type="number" id="beratBadan" step="0.1" placeholder="60">
+                                        </div>
+                                    </div>
+
+                                    <hr style="margin: 25px 0; border: none; border-top: 1px solid #E0E0E0;">
+
+                                    <!-- Diagnosis -->
+                                    <h4 style="margin-bottom: 15px; color: #2E7D32;"><i class="fas fa-diagnoses"></i> Diagnosis</h4>
+                                    <div class="form-group">
+                                        <label>Anamnesa / Keluhan *</label>
+                                        <textarea id="anamnesa" rows="3" required placeholder="Keluhan pasien..."></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Pemeriksaan Fisik</label>
+                                        <textarea id="pemeriksaanFisik" rows="3" placeholder="Hasil pemeriksaan fisik..."></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Diagnosis (ICD-10) *</label>
+                                        <input type="text" id="diagnosis" required placeholder="Contoh: J06.9 - ISPA">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Catatan Tambahan</label>
+                                        <textarea id="catatan" rows="2" placeholder="Catatan untuk pasien..."></textarea>
+                                    </div>
+
+                                    <hr style="margin: 25px 0; border: none; border-top: 1px solid #E0E0E0;">
+
+                                    <!-- E-Resep -->
+                                    <h4 style="margin-bottom: 15px; color: #FF9800;"><i class="fas fa-pills"></i> E-Resep</h4>
+                                    <div id="resepContainer">
+                                        <!-- Resep items akan ditambahkan di sini -->
+                                    </div>
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="tambahResep()">
+                                        <i class="fas fa-plus"></i> Tambah Obat
+                                    </button>
+
+                                    <div class="card-footer" style="margin: 30px -20px -20px; padding: 20px;">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Simpan & Kirim ke Farmasi
+                                        </button>
+                                        <button type="button" class="btn btn-danger" onclick="batalPemeriksaan()">
+                                            <i class="fas fa-times"></i> Batal
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Riwayat Section -->
+                <section id="section-riwayat" class="section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-search"></i> Cari Riwayat Pasien</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="search-box">
+                                <input type="text" id="searchRiwayat" placeholder="Cari berdasarkan No. RM atau Nama Pasien...">
+                                <button class="btn btn-primary" onclick="cariRiwayatPasien()">
+                                    <i class="fas fa-search"></i> Cari
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="hasilRiwayatPasien" class="hidden">
+                        <!-- Info Pasien -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-user"></i> Data Pasien</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-row">
+                                    <div><strong>No. RM:</strong> <span id="riwInfoRM">-</span></div>
+                                    <div><strong>Nama:</strong> <span id="riwInfoNama">-</span></div>
+                                    <div><strong>Umur:</strong> <span id="riwInfoUmur">-</span></div>
+                                    <div><strong>Alergi:</strong> <span id="riwInfoAlergi" style="color: #D32F2F;">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Daftar Riwayat -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-clipboard-list"></i> Riwayat Kunjungan</h3>
+                            </div>
+                            <div class="card-body" id="daftarRiwayatMedis">
+                                <p class="text-center">Memuat data...</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script>
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        let currentUser = null;
+        let obatList = [];
+        let resepCounter = 0;
+        let dokterPoliId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Protect page
+            const isAllowed = await protectPage(['dokter', 'admin']);
+            if (!isAllowed) return;
+
+            // Get user data
+            const user = await getCurrentUser();
+            const userData = await getUserRole();
+            if (userData) {
+                document.getElementById('userName').textContent = userData.nama;
+                document.getElementById('userAvatar').textContent = userData.nama.charAt(0).toUpperCase();
+            }
+
+            // Get dokter poli
+            const { data: dokterData } = await supabase
+                .from('users')
+                .select('poli_id, poli:poli_id(nama)')
+                .eq('id', user.id)
+                .single();
+
+            if (dokterData && dokterData.poli_id) {
+                dokterPoliId = dokterData.poli_id;
+                document.getElementById('userPoli').textContent = dokterData.poli.nama;
+            }
+
+            // Set current date
+            document.getElementById('currentDate').textContent = formatTanggal(new Date());
+
+            // Load data
+            await loadObat();
+            await loadStatistik();
+            await loadAntreanDashboard();
+
+            // Setup realtime subscription
+            setupRealtimeSubscription();
+
+            // Setup menu navigation
+            setupNavigation();
+        });
+
+        // ============================================
+        // NAVIGATION
+        // ============================================
+        function setupNavigation() {
+            const menuItems = document.querySelectorAll('.sidebar-menu a');
+            menuItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = item.dataset.section;
+                    showSection(section);
+                    
+                    menuItems.forEach(m => m.classList.remove('active'));
+                    item.classList.add('active');
+                });
+            });
+        }
+
+        function showSection(sectionName) {
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`section-${sectionName}`).classList.remove('hidden');
+            
+            if (sectionName === 'antrean') loadAntreanFull();
+        }
+
+        // ============================================
+        // LOAD DATA
+        // ============================================
+        async function loadObat() {
+            const { data, error } = await supabase.from('obat').select('*').eq('aktif', true).gt('stok', 0);
+            if (!error) obatList = data;
+        }
+
+        async function loadStatistik() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            let query = supabase.from('kunjungan').select('*', { count: 'exact', head: true }).gte('created_at', today);
+            if (dokterPoliId) query = query.eq('poli_id', dokterPoliId);
+
+            // Menunggu
+            const { count: menunggu } = await query.eq('status', 'Menunggu');
+            document.getElementById('totalMenunggu').textContent = menunggu || 0;
+
+            // Selesai
+            const { count: selesai } = await supabase
+                .from('kunjungan')
+                .select('*', { count: 'exact', head: true })
+                .gte('created_at', today)
+                .in('status', ['Menuju Farmasi', 'Selesai'])
+                .eq('poli_id', dokterPoliId);
+            document.getElementById('totalSelesai').textContent = selesai || 0;
+        }
+
+        async function loadAntreanDashboard() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            let query = supabase
+                .from('kunjungan')
+                .select(`*, pasien:pasien_id(nama, no_rm, tanggal_lahir)`)
+                .eq('status', 'Menunggu')
+                .gte('created_at', today)
+                .order('nomor_antrean', { ascending: true })
+                .limit(5);
+
+            if (dokterPoliId) query = query.eq('poli_id', dokterPoliId);
+
+            const { data, error } = await query;
+            const container = document.getElementById('antreanDashboard');
+
+            if (error || !data || data.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle icon"></i>
+                        <h4>Tidak Ada Antrean</h4>
+                        <p>Semua pasien sudah dilayani</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.map(item => `
+                <div class="queue-item">
+                    <div class="queue-number">${item.nomor_antrean}</div>
+                    <div class="queue-info">
+                        <h4>${item.pasien.nama}</h4>
+                        <p>No. RM: ${item.pasien.no_rm} | ${item.jenis_bayar}</p>
+                    </div>
+                    <div class="queue-actions">
+                        <button class="btn btn-sm btn-primary" onclick="mulaiPemeriksaan('${item.id}')">
+                            <i class="fas fa-stethoscope"></i> Periksa
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadAntreanFull() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            let query = supabase
+                .from('kunjungan')
+                .select(`*, pasien:pasien_id(nama, no_rm, tanggal_lahir)`)
+                .eq('status', 'Menunggu')
+                .gte('created_at', today)
+                .order('nomor_antrean', { ascending: true });
+
+            if (dokterPoliId) query = query.eq('poli_id', dokterPoliId);
+
+            const { data, error } = await query;
+            const tbody = document.getElementById('tabelAntrean');
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada pasien menunggu</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                const umur = hitungUmur(item.pasien.tanggal_lahir);
+                return `
+                    <tr>
+                        <td><strong>${item.nomor_antrean}</strong></td>
+                        <td>${item.pasien.no_rm}</td>
+                        <td>${item.pasien.nama}</td>
+                        <td>${umur} th</td>
+                        <td><span class="badge ${item.jenis_bayar === 'BPJS' ? 'badge-info' : 'badge-warning'}">${item.jenis_bayar}</span></td>
+                        <td>${item.keluhan || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="mulaiPemeriksaan('${item.id}')">
+                                <i class="fas fa-stethoscope"></i> Periksa
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function hitungUmur(tanggalLahir) {
+            const birthDate = new Date(tanggalLahir);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+            return age;
+        }
+
+        // ============================================
+        // PEMERIKSAAN
+        // ============================================
+        async function mulaiPemeriksaan(kunjunganId) {
+            showLoading();
+
+            // Get kunjungan data with pasien
+            const { data: kunjungan, error } = await supabase
+                .from('kunjungan')
+                .select(`*, pasien:pasien_id(*)`)
+                .eq('id', kunjunganId)
+                .single();
+
+            hideLoading();
+
+            if (error || !kunjungan) {
+                showNotification('Gagal memuat data kunjungan', 'error');
+                return;
+            }
+
+            // Update status to Diperiksa
+            await supabase.from('kunjungan').update({ status: 'Diperiksa' }).eq('id', kunjunganId);
+
+            const pasien = kunjungan.pasien;
+            const umur = hitungUmur(pasien.tanggal_lahir);
+
+            // Fill info
+            document.getElementById('kunjunganId').value = kunjunganId;
+            document.getElementById('pasienId').value = pasien.id;
+            document.getElementById('badgeAntrean').textContent = kunjungan.nomor_antrean;
+            document.getElementById('pemInfoRM').textContent = pasien.no_rm;
+            document.getElementById('pemInfoNama').textContent = pasien.nama;
+            document.getElementById('pemInfoUmur').textContent = `${umur} tahun`;
+            document.getElementById('pemInfoJK').textContent = pasien.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan';
+            document.getElementById('pemInfoGD').textContent = pasien.golongan_darah || '-';
+            document.getElementById('pemInfoAlergi').textContent = pasien.alergi || 'Tidak ada';
+            document.getElementById('pemInfoBPJS').textContent = pasien.no_bpjs || '-';
+            document.getElementById('pemInfoBayar').textContent = kunjungan.jenis_bayar;
+            document.getElementById('pemInfoKeluhan').textContent = kunjungan.keluhan || '-';
+            document.getElementById('pasienSekarang').textContent = pasien.nama;
+
+            // Pre-fill anamnesa with keluhan
+            document.getElementById('anamnesa').value = kunjungan.keluhan || '';
+
+            // Load riwayat medis
+            await loadRiwayatMedis(pasien.id);
+
+            // Reset resep
+            document.getElementById('resepContainer').innerHTML = '';
+            resepCounter = 0;
+            tambahResep();
+
+            // Show form
+            document.getElementById('noPasienSelected').classList.add('hidden');
+            document.getElementById('formPemeriksaanContainer').classList.remove('hidden');
+            showSection('pemeriksaan');
+        }
+
+        async function loadRiwayatMedis(pasienId) {
+            const { data, error } = await supabase
+                .from('rekam_medis')
+                .select(`*, kunjungan:kunjungan_id(created_at, poli:poli_id(nama))`)
+                .eq('pasien_id', pasienId)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            const container = document.getElementById('riwayatMedisContainer');
+
+            if (error || !data || data.length === 0) {
+                container.innerHTML = '<p style="color: #757575; text-align: center;">Tidak ada riwayat medis sebelumnya</p>';
+                return;
+            }
+
+            container.innerHTML = data.map(rm => `
+                <div class="medical-record">
+                    <div class="medical-record-header">
+                        <div>
+                            <strong>${formatTanggalSingkat(rm.kunjungan.created_at)}</strong>
+                            <span class="badge badge-info" style="margin-left: 10px;">${rm.kunjungan.poli.nama}</span>
+                        </div>
+                    </div>
+                    <div class="medical-record-body">
+                        <div class="record-field">
+                            <label>Diagnosis</label>
+                            <p>${rm.diagnosis}</p>
+                        </div>
+                        <div class="record-field">
+                            <label>Keluhan</label>
+                            <p>${rm.anamnesa || '-'}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function tambahResep() {
+            resepCounter++;
+            const container = document.getElementById('resepContainer');
+            
+            const obatOptions = obatList.map(o => `<option value="${o.id}">${o.nama} (Stok: ${o.stok})</option>`).join('');
+            
+            const resepHtml = `
+                <div class="prescription-item" id="resep-${resepCounter}">
+                    <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 2fr auto; gap: 10px; align-items: center;">
+                        <select class="resep-obat" required>
+                            <option value="">-- Pilih Obat --</option>
+                            ${obatOptions}
+                        </select>
+                        <input type="number" class="resep-jumlah" placeholder="Qty" min="1" required>
+                        <input type="text" class="resep-aturan" placeholder="Aturan pakai (3x1 sehari)">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="hapusResep(${resepCounter})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', resepHtml);
+        }
+
+        function hapusResep(id) {
+            document.getElementById(`resep-${id}`).remove();
+        }
+
+        function batalPemeriksaan() {
+            if (confirm('Yakin ingin membatalkan pemeriksaan?')) {
+                const kunjunganId = document.getElementById('kunjunganId').value;
+                supabase.from('kunjungan').update({ status: 'Menunggu' }).eq('id', kunjunganId);
+                
+                document.getElementById('formPemeriksaan').reset();
+                document.getElementById('formPemeriksaanContainer').classList.add('hidden');
+                document.getElementById('noPasienSelected').classList.remove('hidden');
+                document.getElementById('pasienSekarang').textContent = '-';
+                
+                loadAntreanDashboard();
+                loadStatistik();
+            }
+        }
+
+        // Form submission
+        document.getElementById('formPemeriksaan').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+
+            const kunjunganId = document.getElementById('kunjunganId').value;
+            const pasienId = document.getElementById('pasienId').value;
+            const user = await getCurrentUser();
+
+            // Save rekam medis
+            const rekamMedisData = {
+                kunjungan_id: kunjunganId,
+                pasien_id: pasienId,
+                dokter_id: user.id,
+                tekanan_darah: document.getElementById('tekananDarah').value || null,
+                suhu: document.getElementById('suhu').value || null,
+                nadi: document.getElementById('nadi').value || null,
+                berat_badan: document.getElementById('beratBadan').value || null,
+                anamnesa: document.getElementById('anamnesa').value,
+                pemeriksaan_fisik: document.getElementById('pemeriksaanFisik').value || null,
+                diagnosis: document.getElementById('diagnosis').value,
+                catatan: document.getElementById('catatan').value || null
+            };
+
+            const { data: rekamMedis, error: rmError } = await supabase
+                .from('rekam_medis')
+                .insert([rekamMedisData])
+                .select()
+                .single();
+
+            if (rmError) {
+                hideLoading();
+                console.error('Error saving rekam medis:', rmError);
+                showNotification('Gagal menyimpan rekam medis', 'error');
+                return;
+            }
+
+            // Save resep
+            const resepItems = document.querySelectorAll('.prescription-item');
+            const resepData = [];
+
+            for (const item of resepItems) {
+                const obatId = item.querySelector('.resep-obat').value;
+                const jumlah = item.querySelector('.resep-jumlah').value;
+                const aturan = item.querySelector('.resep-aturan').value;
+
+                if (obatId && jumlah) {
+                    resepData.push({
+                        rekam_medis_id: rekamMedis.id,
+                        kunjungan_id: kunjunganId,
+                        obat_id: obatId,
+                        jumlah: parseInt(jumlah),
+                        aturan_pakai: aturan || null,
+                        status: 'Menunggu'
+                    });
+                }
+            }
+
+            if (resepData.length > 0) {
+                const { error: resepError } = await supabase.from('resep').insert(resepData);
+                if (resepError) {
+                    console.error('Error saving resep:', resepError);
+                }
+            }
+
+            // Update kunjungan status
+            await supabase.from('kunjungan').update({ status: 'Menuju Farmasi' }).eq('id', kunjunganId);
+
+            hideLoading();
+            showNotification('Pemeriksaan berhasil disimpan dan dikirim ke farmasi', 'success');
+
+            // Reset form
+            e.target.reset();
+            document.getElementById('formPemeriksaanContainer').classList.add('hidden');
+            document.getElementById('noPasienSelected').classList.remove('hidden');
+            document.getElementById('pasienSekarang').textContent = '-';
+
+            // Reload data
+            await loadStatistik();
+            await loadAntreanDashboard();
+        });
+
+        // ============================================
+        // RIWAYAT PASIEN
+        // ============================================
+        async function cariRiwayatPasien() {
+            const keyword = document.getElementById('searchRiwayat').value.trim();
+            if (!keyword) {
+                showNotification('Masukkan No. RM atau nama pasien', 'warning');
+                return;
+            }
+
+            showLoading();
+            const { data: pasien, error } = await supabase
+                .from('pasien')
+                .select('*')
+                .or(`no_rm.ilike.%${keyword}%,nama.ilike.%${keyword}%`)
+                .limit(1)
+                .single();
+            hideLoading();
+
+            if (error || !pasien) {
+                showNotification('Pasien tidak ditemukan', 'warning');
+                document.getElementById('hasilRiwayatPasien').classList.add('hidden');
+                return;
+            }
+
+            const umur = hitungUmur(pasien.tanggal_lahir);
+            document.getElementById('riwInfoRM').textContent = pasien.no_rm;
+            document.getElementById('riwInfoNama').textContent = pasien.nama;
+            document.getElementById('riwInfoUmur').textContent = `${umur} tahun`;
+            document.getElementById('riwInfoAlergi').textContent = pasien.alergi || 'Tidak ada';
+
+            // Load riwayat
+            const { data: riwayat } = await supabase
+                .from('rekam_medis')
+                .select(`*, kunjungan:kunjungan_id(created_at, poli:poli_id(nama)), dokter:dokter_id(nama)`)
+                .eq('pasien_id', pasien.id)
+                .order('created_at', { ascending: false });
+
+            const container = document.getElementById('daftarRiwayatMedis');
+            
+            if (!riwayat || riwayat.length === 0) {
+                container.innerHTML = '<p class="text-center" style="color: #757575;">Tidak ada riwayat medis</p>';
+            } else {
+                container.innerHTML = riwayat.map(rm => `
+                    <div class="medical-record">
+                        <div class="medical-record-header">
+                            <div>
+                                <strong>${formatTanggal(rm.kunjungan.created_at)}</strong>
+                                <span class="badge badge-info" style="margin-left: 10px;">${rm.kunjungan.poli.nama}</span>
+                            </div>
+                            <small style="color: #757575;">Dokter: ${rm.dokter?.nama || '-'}</small>
+                        </div>
+                        <div class="medical-record-body">
+                            <div class="record-field">
+                                <label>Diagnosis</label>
+                                <p>${rm.diagnosis}</p>
+                            </div>
+                            <div class="record-field">
+                                <label>Keluhan</label>
+                                <p>${rm.anamnesa || '-'}</p>
+                            </div>
+                            <div class="record-field">
+                                <label>Tekanan Darah</label>
+                                <p>${rm.tekanan_darah || '-'}</p>
+                            </div>
+                            <div class="record-field">
+                                <label>Suhu</label>
+                                <p>${rm.suhu ? rm.suhu + '°C' : '-'}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('hasilRiwayatPasien').classList.remove('hidden');
+        }
+
+        // ============================================
+        // REALTIME SUBSCRIPTION
+        // ============================================
+        function setupRealtimeSubscription() {
+            supabase
+                .channel('kunjungan-dokter')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'kunjungan' }, () => {
+                    loadStatistik();
+                    loadAntreanDashboard();
+                })
+                .subscribe();
+        }
+    </script>
+</body>
+</html>

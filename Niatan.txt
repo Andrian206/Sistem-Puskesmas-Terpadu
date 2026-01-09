@@ -1,0 +1,64 @@
+Saya ingin membangun sebuah Sistem Informasi Puskesmas Terpadu berbasis web yang mendigitalkan seluruh alur pelayanan kesehatan, mulai dari pendaftaran pasien hingga manajemen farmasi. Sistem ini bertujuan untuk mengintegrasikan enam peran pengguna (aktor) dalam satu platform real-time, guna menggantikan pencatatan manual dan mempercepat birokrasi pelayanan. Dengan memanfaatkan Supabase sebagai backend-as-a-service, aplikasi ini akan menangani autentikasi pengguna, penyimpanan data rekam medis yang sensitif secara aman, serta manajemen inventaris obat secara otomatis sesuai dengan struktur Class Diagram yang telah Anda rancang.
+Secara detail, sistem ini akan mengelola alur pasien yang dimulai dari Modul Pendaftaran, di mana petugas melakukan verifikasi status pasien (baru atau lama) dan menentukan jenis kepesertaan (Umum atau BPJS). Logika pada modul ini akan memicu pembuatan nomor antrean dan rekam medis baru di database Supabase. Setelah terdaftar, data pasien akan mengalir ke Modul Dokter secara otomatis; di sini, dokter dapat mengakses riwayat medis pasien, menginput hasil diagnosis, dan mengirimkan resep obat elektronik. Sistem harus memastikan bahwa setiap input diagnosis langsung terkunci ke dalam tabel rekam medis yang terhubung secara relasional dengan identitas dokter dan pasien tersebut.
+Selanjutnya, pada Modul Farmasi, apoteker akan menerima notifikasi resep secara otomatis di mana sistem akan menjalankan logika pengecekan stok obat secara otomatis; jika stok mencukupi, sistem akan mengurangi saldo inventaris saat obat diserahkan, namun jika stok tidak memadai, sistem akan menandai resep tersebut sebagai "obat tidak lengkap" sebagai bentuk kendali mutu. Selain operasional harian, sistem ini memiliki fungsi Manajemen Pelaporan bagi Kepala Puskesmas untuk memantau analitik data seperti 10 penyakit terbanyak, laporan kunjungan bulanan, dan tren pemakaian obat. Untuk menjaga ekosistem aplikasi, Admin Sistem memiliki kendali penuh atas manajemen pengguna (RBAC) dan pemeliharaan data master seperti daftar poliklinik dan jenis obat.
+Dari sisi teknis, aplikasi ini akan mengandalkan JavaScript untuk menangani logika kondisional (seperti alur pembayaran yang berbeda antara BPJS dan Umum) dan integrasi API Supabase untuk operasi CRUD. Keamanan data akan dijaga ketat melalui Row Level Security (RLS) pada Supabase, memastikan bahwa dokter hanya dapat mengakses data medis, sementara apoteker hanya berfokus pada data logistik obat. Dengan desain ini, Anda akan memiliki aplikasi web yang ringan di sisi depan (frontend) namun memiliki basis data yang sangat kuat dan terstruktur di sisi belakang, menjamin integritas data mulai dari pasien datang hingga mereka meninggalkan puskesmas.
+
+1. Modul Pendaftaran (Petugas Pendaftaran)
+Modul ini adalah pintu masuk data. Fokus utamanya adalah validasi identitas dan manajemen antrean.
+Use Case:
+Registrasi Pasien Baru: Menginput NIK, Nama, Alamat ke tabel pasien.
+Verifikasi Pasien Lama: Mencari data pasien yang sudah ada agar tidak duplikat.
+Pendaftaran Kunjungan: Memilih Poli tujuan (Poli Umum, Gigi, dll) dan jenis bayar (BPJS/Umum).
+Alur Program:
+Petugas input NIK/Nama di form pencarian.
+JS melakukan query ke Supabase tabel pasien.
+Jika data tidak ada, tampilkan form input pasien baru → Simpan ke Supabase.
+Jika ada, petugas membuat entri di tabel kunjungan dengan status "Menunggu".
+Sistem men-generate nomor antrean secara otomatis.
+2. Modul Pemeriksaan (Dokter)
+Modul ini adalah inti dari pelayanan medis. Di sini dokter mendiagnosis dan memberikan instruksi pengobatan.
+Use Case:
+Melihat Daftar Antrean: Menampilkan pasien yang sudah didaftarkan petugas sesuai poli dokter tersebut.
+Akses Rekam Medis: Melihat riwayat penyakit pasien sebelumnya (Read historical data).
+Input Diagnosis: Mengisi keluhan dan hasil pemeriksaan ke tabel rekam_medis.
+E-Resep: Memilih obat dari katalog dan menentukan dosisnya.
+Alur Program:
+Dokter melihat daftar pasien di layar (JS menggunakan Realtime Subscription Supabase agar antrean terupdate otomatis).
+Dokter memilih satu pasien → JS menarik data dari tabel rekam_medis berdasarkan pasien_id.
+Dokter mengisi form diagnosis.
+Saat dokter menginput obat, JS mencari data di tabel obat untuk memastikan obat tersedia.
+Klik "Simpan" → Data masuk ke tabel rekam_medis dan resep, lalu status kunjungan berubah menjadi "Menuju Farmasi".
+3. Modul Farmasi (Apoteker)
+Modul ini berfungsi sebagai kendali logistik obat dan penyerahan ke pasien.
+Use Case:
+Terima Resep: Melihat resep yang baru saja dikirim oleh dokter.
+Cek Stok Otomatis: Sistem memvalidasi apakah jumlah obat di gudang cukup.
+Penyerahan Obat: Menandai resep telah diambil.
+Update Stok: Mengurangi jumlah stok di tabel obat secara otomatis.
+Alur Program:
+Apoteker melihat daftar resep masuk.
+Apoteker membuka detail resep.
+Logika JS: Sistem membandingkan jumlah_resep dengan stok_obat di database.
+Jika stok kurang, sistem menampilkan peringatan "Stok Tidak Cukup".
+Jika stok cukup, apoteker klik "Serahkan" → JS menjalankan perintah update ke tabel obat (stok lama - jumlah resep) dan mengubah status kunjungan menjadi "Selesai".
+4. Modul Manajemen & Pelaporan (Kepala Puskesmas)
+Modul ini tidak melakukan input data, melainkan mengolah data menjadi informasi.
+Use Case:
+Laporan Kunjungan: Melihat statistik berapa pasien yang datang per hari/bulan.
+Top 10 Penyakit: Melihat diagnosis apa yang paling sering muncul (untuk tren kesehatan daerah).
+Laporan Stok Obat: Melihat obat mana yang hampir habis (stok kritis).
+Alur Program:
+User login sebagai Kepala Puskesmas.
+Memilih rentang tanggal di filter HTML.
+JS melakukan query agregasi ke Supabase (contoh: count kunjungan, group by diagnosis).
+Data ditampilkan dalam bentuk tabel atau grafik (bisa menggunakan library tambahan seperti Chart.js).
+5. Modul Admin Sistem (Admin)
+Modul pendukung untuk menjaga operasional aplikasi.
+Use Case:
+Kelola User: Menambah/menghapus akun dokter, perawat, atau apoteker.
+Data Master Obat: Menambah jenis obat baru atau mengupdate harga.
+Data Master Poli: Menambah atau menonaktifkan layanan poli.
+Alur Program:
+Admin masuk ke halaman khusus manajemen.
+Menggunakan fungsi supabase.auth.admin untuk mengelola akun pengguna.
+Melakukan operasi CRUD (Create, Read, Update, Delete) pada tabel-tabel referensi seperti tabel obat dan poli.

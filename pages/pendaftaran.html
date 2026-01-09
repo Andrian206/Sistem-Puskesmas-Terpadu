@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modul Pendaftaran - SIPUSKESMAS</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-hospital"></i> SIPUSKESMAS</h2>
+                <p>Modul Pendaftaran</p>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active" data-section="dashboard"><i class="fas fa-home icon"></i> Dashboard</a></li>
+                <li><a href="#" data-section="daftar-pasien"><i class="fas fa-user-plus icon"></i> Daftar Pasien Baru</a></li>
+                <li><a href="#" data-section="kunjungan"><i class="fas fa-clipboard-list icon"></i> Pendaftaran Kunjungan</a></li>
+                <li><a href="#" data-section="antrean"><i class="fas fa-users icon"></i> Antrean Hari Ini</a></li>
+                <li><a href="#" data-section="riwayat"><i class="fas fa-history icon"></i> Riwayat Kunjungan</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <button class="btn btn-outline btn-block" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h1>Pendaftaran Pasien</h1>
+                    <p id="currentDate"></p>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <div class="user-avatar" id="userAvatar">P</div>
+                        <div>
+                            <strong id="userName">Petugas Pendaftaran</strong>
+                            <p style="font-size: 0.8rem; color: #757575;">Pendaftaran</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Sections -->
+            <div class="content">
+                <!-- Dashboard Section -->
+                <section id="section-dashboard" class="section active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon primary"><i class="fas fa-users"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalPasienHariIni">0</h4>
+                                <p>Pasien Hari Ini</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon secondary"><i class="fas fa-user-clock"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalMenunggu">0</h4>
+                                <p>Menunggu Dipanggil</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon warning"><i class="fas fa-id-card"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalBPJS">0</h4>
+                                <p>Pasien BPJS</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon danger"><i class="fas fa-money-bill"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalUmum">0</h4>
+                                <p>Pasien Umum</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-bolt"></i> Aksi Cepat</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="flex gap-20" style="flex-wrap: wrap;">
+                                <button class="btn btn-primary" onclick="showSection('daftar-pasien')">
+                                    <i class="fas fa-user-plus"></i> Daftar Pasien Baru
+                                </button>
+                                <button class="btn btn-secondary" onclick="showSection('kunjungan')">
+                                    <i class="fas fa-clipboard-list"></i> Pendaftaran Kunjungan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Antrean Terkini -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-list-ol"></i> Antrean Menunggu</h3>
+                            <button class="btn btn-sm btn-outline" onclick="loadAntrean()">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="antreanList" class="queue-list">
+                                <div class="empty-state">
+                                    <i class="fas fa-inbox icon"></i>
+                                    <h4>Belum Ada Antrean</h4>
+                                    <p>Antrean pasien akan muncul di sini</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Daftar Pasien Baru Section -->
+                <section id="section-daftar-pasien" class="section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-user-plus"></i> Registrasi Pasien Baru</h3>
+                        </div>
+                        <div class="card-body">
+                            <!-- Cari Pasien Dulu -->
+                            <div class="search-box mb-20">
+                                <input type="text" id="searchNIK" placeholder="Cari berdasarkan NIK atau Nama...">
+                                <button class="btn btn-primary" onclick="cariPasien()">
+                                    <i class="fas fa-search"></i> Cari
+                                </button>
+                            </div>
+
+                            <div id="hasilPencarian" class="hidden mb-20" style="padding: 15px; background: #E8F5E9; border-radius: 8px;">
+                                <!-- Hasil pencarian akan ditampilkan di sini -->
+                            </div>
+
+                            <hr style="margin: 20px 0; border: none; border-top: 1px solid #E0E0E0;">
+
+                            <!-- Form Pasien Baru -->
+                            <form id="formPasienBaru">
+                                <h4 style="margin-bottom: 20px; color: #2E7D32;"><i class="fas fa-file-medical"></i> Data Pasien Baru</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="nik">NIK (16 Digit) *</label>
+                                        <input type="text" id="nik" maxlength="16" pattern="[0-9]{16}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="nama">Nama Lengkap *</label>
+                                        <input type="text" id="nama" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="tanggalLahir">Tanggal Lahir *</label>
+                                        <input type="date" id="tanggalLahir" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="jenisKelamin">Jenis Kelamin *</label>
+                                        <select id="jenisKelamin" required>
+                                            <option value="">-- Pilih --</option>
+                                            <option value="L">Laki-laki</option>
+                                            <option value="P">Perempuan</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="alamat">Alamat Lengkap *</label>
+                                    <textarea id="alamat" rows="3" required></textarea>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="noHP">No. HP</label>
+                                        <input type="tel" id="noHP">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="golDarah">Golongan Darah</label>
+                                        <select id="golDarah">
+                                            <option value="">-- Pilih --</option>
+                                            <option value="A">A</option>
+                                            <option value="B">B</option>
+                                            <option value="AB">AB</option>
+                                            <option value="O">O</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="noBPJS">No. BPJS (Jika Ada)</label>
+                                        <input type="text" id="noBPJS" maxlength="13">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="alergi">Riwayat Alergi</label>
+                                        <input type="text" id="alergi" placeholder="Contoh: Penisilin, Seafood">
+                                    </div>
+                                </div>
+                                <div class="card-footer" style="margin: 20px -20px -20px; padding: 20px;">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Simpan Data Pasien
+                                    </button>
+                                    <button type="reset" class="btn btn-outline">
+                                        <i class="fas fa-undo"></i> Reset Form
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Pendaftaran Kunjungan Section -->
+                <section id="section-kunjungan" class="section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-clipboard-list"></i> Pendaftaran Kunjungan</h3>
+                        </div>
+                        <div class="card-body">
+                            <!-- Cari Pasien -->
+                            <div class="search-box mb-20">
+                                <input type="text" id="searchPasienKunjungan" placeholder="Cari pasien (NIK/Nama/No RM)...">
+                                <button class="btn btn-primary" onclick="cariPasienKunjungan()">
+                                    <i class="fas fa-search"></i> Cari
+                                </button>
+                            </div>
+
+                            <!-- Info Pasien Terpilih -->
+                            <div id="infoPasienKunjungan" class="hidden" style="background: #E3F2FD; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                                <h4 style="margin-bottom: 15px; color: #1565C0;"><i class="fas fa-user"></i> Data Pasien</h4>
+                                <div class="form-row">
+                                    <div><strong>No. RM:</strong> <span id="infoRM">-</span></div>
+                                    <div><strong>NIK:</strong> <span id="infoNIK">-</span></div>
+                                    <div><strong>Nama:</strong> <span id="infoNama">-</span></div>
+                                    <div><strong>Umur:</strong> <span id="infoUmur">-</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Form Kunjungan -->
+                            <form id="formKunjungan" class="hidden">
+                                <h4 style="margin-bottom: 20px; color: #2E7D32;"><i class="fas fa-hospital-user"></i> Data Kunjungan</h4>
+                                <input type="hidden" id="pasienIdKunjungan">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="poli">Poli Tujuan *</label>
+                                        <select id="poli" required>
+                                            <option value="">-- Pilih Poli --</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="jenisBayar">Jenis Pembayaran *</label>
+                                        <select id="jenisBayar" required>
+                                            <option value="">-- Pilih --</option>
+                                            <option value="BPJS">BPJS</option>
+                                            <option value="Umum">Umum</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="keluhan">Keluhan Awal</label>
+                                    <textarea id="keluhan" rows="3" placeholder="Tuliskan keluhan pasien..."></textarea>
+                                </div>
+                                <div class="card-footer" style="margin: 20px -20px -20px; padding: 20px;">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-check-circle"></i> Daftarkan Kunjungan
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Antrean Hari Ini Section -->
+                <section id="section-antrean" class="section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-users"></i> Antrean Hari Ini</h3>
+                            <div class="flex gap-10">
+                                <select id="filterPoli" onchange="loadAntreanFull()">
+                                    <option value="">Semua Poli</option>
+                                </select>
+                                <button class="btn btn-sm btn-outline" onclick="loadAntreanFull()">
+                                    <i class="fas fa-sync"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>No. Antrean</th>
+                                            <th>No. RM</th>
+                                            <th>Nama Pasien</th>
+                                            <th>Poli</th>
+                                            <th>Jenis Bayar</th>
+                                            <th>Status</th>
+                                            <th>Waktu Daftar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelAntrean">
+                                        <tr>
+                                            <td colspan="7" class="text-center">Memuat data...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Riwayat Kunjungan Section -->
+                <section id="section-riwayat" class="section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-history"></i> Riwayat Kunjungan</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="filter-group">
+                                <input type="date" id="filterTanggalMulai">
+                                <input type="date" id="filterTanggalAkhir">
+                                <button class="btn btn-primary" onclick="loadRiwayat()">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                            </div>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Tanggal</th>
+                                            <th>No. RM</th>
+                                            <th>Nama Pasien</th>
+                                            <th>Poli</th>
+                                            <th>Jenis Bayar</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelRiwayat">
+                                        <tr>
+                                            <td colspan="6" class="text-center">Pilih rentang tanggal untuk melihat riwayat</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Sukses Daftar -->
+    <div id="modalSuksesDaftar" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header" style="background: #E8F5E9;">
+                <h3><i class="fas fa-check-circle" style="color: #2E7D32;"></i> Pendaftaran Berhasil</h3>
+                <button class="modal-close" onclick="closeModal('modalSuksesDaftar')">&times;</button>
+            </div>
+            <div class="modal-body text-center" style="padding: 40px;">
+                <div style="font-size: 5rem; color: #2E7D32; margin-bottom: 20px;">
+                    <i class="fas fa-ticket-alt"></i>
+                </div>
+                <h2 id="nomorAntreanSukses" style="font-size: 3rem; color: #2E7D32; margin-bottom: 10px;">U-001</h2>
+                <p style="font-size: 1.2rem; margin-bottom: 20px;">Nomor Antrean</p>
+                <div style="background: #F5F5F5; padding: 15px; border-radius: 8px; text-align: left;">
+                    <p><strong>Poli:</strong> <span id="poliSukses">-</span></p>
+                    <p><strong>Jenis Bayar:</strong> <span id="jenisBayarSukses">-</span></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeModal('modalSuksesDaftar')">
+                    <i class="fas fa-check"></i> Selesai
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script>
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        let currentUser = null;
+        let poliList = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Protect page
+            const isAllowed = await protectPage(['pendaftaran', 'admin']);
+            if (!isAllowed) return;
+
+            // Get user data
+            const userData = await getUserRole();
+            if (userData) {
+                document.getElementById('userName').textContent = userData.nama;
+                document.getElementById('userAvatar').textContent = userData.nama.charAt(0).toUpperCase();
+            }
+
+            // Set current date
+            document.getElementById('currentDate').textContent = formatTanggal(new Date());
+
+            // Load data
+            await loadPoli();
+            await loadStatistik();
+            await loadAntrean();
+
+            // Setup realtime subscription
+            setupRealtimeSubscription();
+
+            // Setup menu navigation
+            setupNavigation();
+        });
+
+        // ============================================
+        // NAVIGATION
+        // ============================================
+        function setupNavigation() {
+            const menuItems = document.querySelectorAll('.sidebar-menu a');
+            menuItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = item.dataset.section;
+                    showSection(section);
+                    
+                    menuItems.forEach(m => m.classList.remove('active'));
+                    item.classList.add('active');
+                });
+            });
+        }
+
+        function showSection(sectionName) {
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`section-${sectionName}`).classList.remove('hidden');
+            
+            // Load data based on section
+            if (sectionName === 'antrean') loadAntreanFull();
+        }
+
+        // ============================================
+        // LOAD DATA
+        // ============================================
+        async function loadPoli() {
+            const { data, error } = await supabase.from('poli').select('*').eq('aktif', true);
+            if (error) {
+                console.error('Error loading poli:', error);
+                return;
+            }
+            poliList = data;
+            
+            // Populate select elements
+            const poliSelect = document.getElementById('poli');
+            const filterPoli = document.getElementById('filterPoli');
+            
+            poliList.forEach(p => {
+                poliSelect.innerHTML += `<option value="${p.id}">${p.nama}</option>`;
+                filterPoli.innerHTML += `<option value="${p.id}">${p.nama}</option>`;
+            });
+        }
+
+        async function loadStatistik() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Total pasien hari ini
+            const { count: totalHariIni } = await supabase
+                .from('kunjungan')
+                .select('*', { count: 'exact', head: true })
+                .gte('created_at', today);
+            
+            document.getElementById('totalPasienHariIni').textContent = totalHariIni || 0;
+
+            // Total menunggu
+            const { count: totalMenunggu } = await supabase
+                .from('kunjungan')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'Menunggu')
+                .gte('created_at', today);
+            
+            document.getElementById('totalMenunggu').textContent = totalMenunggu || 0;
+
+            // Total BPJS
+            const { count: totalBPJS } = await supabase
+                .from('kunjungan')
+                .select('*', { count: 'exact', head: true })
+                .eq('jenis_bayar', 'BPJS')
+                .gte('created_at', today);
+            
+            document.getElementById('totalBPJS').textContent = totalBPJS || 0;
+
+            // Total Umum
+            const { count: totalUmum } = await supabase
+                .from('kunjungan')
+                .select('*', { count: 'exact', head: true })
+                .eq('jenis_bayar', 'Umum')
+                .gte('created_at', today);
+            
+            document.getElementById('totalUmum').textContent = totalUmum || 0;
+        }
+
+        async function loadAntrean() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            const { data, error } = await supabase
+                .from('kunjungan')
+                .select(`
+                    *,
+                    pasien:pasien_id(nama, no_rm),
+                    poli:poli_id(nama)
+                `)
+                .eq('status', 'Menunggu')
+                .gte('created_at', today)
+                .order('nomor_antrean', { ascending: true })
+                .limit(5);
+
+            const container = document.getElementById('antreanList');
+            
+            if (error || !data || data.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox icon"></i>
+                        <h4>Belum Ada Antrean</h4>
+                        <p>Antrean pasien akan muncul di sini</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.map(item => `
+                <div class="queue-item">
+                    <div class="queue-number">${item.nomor_antrean}</div>
+                    <div class="queue-info">
+                        <h4>${item.pasien.nama}</h4>
+                        <p>No. RM: ${item.pasien.no_rm} | ${item.poli.nama} | ${item.jenis_bayar}</p>
+                    </div>
+                    <span class="badge status-menunggu">Menunggu</span>
+                </div>
+            `).join('');
+        }
+
+        async function loadAntreanFull() {
+            const today = new Date().toISOString().split('T')[0];
+            const filterPoli = document.getElementById('filterPoli').value;
+            
+            let query = supabase
+                .from('kunjungan')
+                .select(`
+                    *,
+                    pasien:pasien_id(nama, no_rm),
+                    poli:poli_id(nama)
+                `)
+                .gte('created_at', today)
+                .order('nomor_antrean', { ascending: true });
+
+            if (filterPoli) {
+                query = query.eq('poli_id', filterPoli);
+            }
+
+            const { data, error } = await query;
+            const tbody = document.getElementById('tabelAntrean');
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data antrean</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                const statusClass = {
+                    'Menunggu': 'status-menunggu',
+                    'Diperiksa': 'status-diperiksa',
+                    'Menuju Farmasi': 'status-farmasi',
+                    'Selesai': 'status-selesai'
+                };
+                return `
+                    <tr>
+                        <td><strong>${item.nomor_antrean}</strong></td>
+                        <td>${item.pasien.no_rm}</td>
+                        <td>${item.pasien.nama}</td>
+                        <td>${item.poli.nama}</td>
+                        <td><span class="badge ${item.jenis_bayar === 'BPJS' ? 'badge-info' : 'badge-warning'}">${item.jenis_bayar}</span></td>
+                        <td><span class="badge ${statusClass[item.status]}">${item.status}</span></td>
+                        <td>${new Date(item.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function loadRiwayat() {
+            const tanggalMulai = document.getElementById('filterTanggalMulai').value;
+            const tanggalAkhir = document.getElementById('filterTanggalAkhir').value;
+
+            if (!tanggalMulai || !tanggalAkhir) {
+                showNotification('Silakan pilih rentang tanggal', 'warning');
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('kunjungan')
+                .select(`
+                    *,
+                    pasien:pasien_id(nama, no_rm),
+                    poli:poli_id(nama)
+                `)
+                .gte('created_at', tanggalMulai)
+                .lte('created_at', tanggalAkhir + 'T23:59:59')
+                .order('created_at', { ascending: false });
+
+            const tbody = document.getElementById('tabelRiwayat');
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada data pada rentang tanggal tersebut</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td>${formatTanggalSingkat(item.created_at)}</td>
+                    <td>${item.pasien.no_rm}</td>
+                    <td>${item.pasien.nama}</td>
+                    <td>${item.poli.nama}</td>
+                    <td>${item.jenis_bayar}</td>
+                    <td><span class="badge badge-${item.status === 'Selesai' ? 'success' : 'info'}">${item.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // ============================================
+        // CARI PASIEN
+        // ============================================
+        async function cariPasien() {
+            const keyword = document.getElementById('searchNIK').value.trim();
+            if (!keyword) {
+                showNotification('Masukkan NIK atau nama pasien', 'warning');
+                return;
+            }
+
+            showLoading();
+            const { data, error } = await supabase
+                .from('pasien')
+                .select('*')
+                .or(`nik.ilike.%${keyword}%,nama.ilike.%${keyword}%`)
+                .limit(5);
+            hideLoading();
+
+            const container = document.getElementById('hasilPencarian');
+            
+            if (error || !data || data.length === 0) {
+                container.innerHTML = `
+                    <p style="color: #E65100;"><i class="fas fa-info-circle"></i> Pasien tidak ditemukan. Silakan daftarkan sebagai pasien baru.</p>
+                `;
+                container.classList.remove('hidden');
+                return;
+            }
+
+            container.innerHTML = `
+                <h4 style="margin-bottom: 10px; color: #2E7D32;"><i class="fas fa-check"></i> Pasien Ditemukan</h4>
+                ${data.map(p => `
+                    <div style="padding: 10px; background: white; border-radius: 5px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${p.nama}</strong> (${p.no_rm})<br>
+                            <small>NIK: ${p.nik} | ${p.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</small>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="pilihPasienKunjungan('${p.id}', '${p.no_rm}', '${p.nik}', '${p.nama}', '${p.tanggal_lahir}')">
+                            <i class="fas fa-arrow-right"></i> Daftar Kunjungan
+                        </button>
+                    </div>
+                `).join('')}
+            `;
+            container.classList.remove('hidden');
+        }
+
+        async function cariPasienKunjungan() {
+            const keyword = document.getElementById('searchPasienKunjungan').value.trim();
+            if (!keyword) {
+                showNotification('Masukkan NIK, nama, atau no RM pasien', 'warning');
+                return;
+            }
+
+            showLoading();
+            const { data, error } = await supabase
+                .from('pasien')
+                .select('*')
+                .or(`nik.ilike.%${keyword}%,nama.ilike.%${keyword}%,no_rm.ilike.%${keyword}%`)
+                .limit(1)
+                .single();
+            hideLoading();
+
+            if (error || !data) {
+                showNotification('Pasien tidak ditemukan', 'warning');
+                document.getElementById('infoPasienKunjungan').classList.add('hidden');
+                document.getElementById('formKunjungan').classList.add('hidden');
+                return;
+            }
+
+            pilihPasienKunjungan(data.id, data.no_rm, data.nik, data.nama, data.tanggal_lahir);
+        }
+
+        function pilihPasienKunjungan(id, noRM, nik, nama, tanggalLahir) {
+            // Calculate age
+            const birthDate = new Date(tanggalLahir);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+
+            document.getElementById('pasienIdKunjungan').value = id;
+            document.getElementById('infoRM').textContent = noRM;
+            document.getElementById('infoNIK').textContent = nik;
+            document.getElementById('infoNama').textContent = nama;
+            document.getElementById('infoUmur').textContent = `${age} tahun`;
+
+            document.getElementById('infoPasienKunjungan').classList.remove('hidden');
+            document.getElementById('formKunjungan').classList.remove('hidden');
+
+            // Switch to kunjungan section if coming from pasien baru
+            showSection('kunjungan');
+            document.querySelectorAll('.sidebar-menu a').forEach(m => m.classList.remove('active'));
+            document.querySelector('[data-section="kunjungan"]').classList.add('active');
+        }
+
+        // ============================================
+        // FORM SUBMISSIONS
+        // ============================================
+        document.getElementById('formPasienBaru').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+
+            // Generate No RM
+            const { count } = await supabase.from('pasien').select('*', { count: 'exact', head: true });
+            const noRM = `RM${String((count || 0) + 1).padStart(6, '0')}`;
+
+            const pasienData = {
+                no_rm: noRM,
+                nik: document.getElementById('nik').value,
+                nama: document.getElementById('nama').value.toUpperCase(),
+                tanggal_lahir: document.getElementById('tanggalLahir').value,
+                jenis_kelamin: document.getElementById('jenisKelamin').value,
+                alamat: document.getElementById('alamat').value,
+                no_hp: document.getElementById('noHP').value || null,
+                golongan_darah: document.getElementById('golDarah').value || null,
+                no_bpjs: document.getElementById('noBPJS').value || null,
+                alergi: document.getElementById('alergi').value || null
+            };
+
+            const { data, error } = await supabase.from('pasien').insert([pasienData]).select().single();
+            hideLoading();
+
+            if (error) {
+                console.error('Error:', error);
+                if (error.code === '23505') {
+                    showNotification('NIK sudah terdaftar!', 'error');
+                } else {
+                    showNotification('Gagal menyimpan data pasien', 'error');
+                }
+                return;
+            }
+
+            showNotification(`Pasien berhasil didaftarkan dengan No. RM: ${noRM}`, 'success');
+            e.target.reset();
+            document.getElementById('hasilPencarian').classList.add('hidden');
+
+            // Auto redirect to pendaftaran kunjungan
+            pilihPasienKunjungan(data.id, data.no_rm, data.nik, data.nama, data.tanggal_lahir);
+        });
+
+        document.getElementById('formKunjungan').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+
+            const pasienId = document.getElementById('pasienIdKunjungan').value;
+            const poliId = document.getElementById('poli').value;
+            const jenisBayar = document.getElementById('jenisBayar').value;
+            const keluhan = document.getElementById('keluhan').value;
+
+            // Get poli name for nomor antrean
+            const poliData = poliList.find(p => p.id == poliId);
+
+            // Get today's queue count for this poli
+            const today = new Date().toISOString().split('T')[0];
+            const { count } = await supabase
+                .from('kunjungan')
+                .select('*', { count: 'exact', head: true })
+                .eq('poli_id', poliId)
+                .gte('created_at', today);
+
+            const nomorAntrean = generateNomorAntrean(poliData.nama, (count || 0) + 1);
+
+            const kunjunganData = {
+                pasien_id: pasienId,
+                poli_id: poliId,
+                jenis_bayar: jenisBayar,
+                keluhan: keluhan || null,
+                nomor_antrean: nomorAntrean,
+                status: 'Menunggu'
+            };
+
+            const { error } = await supabase.from('kunjungan').insert([kunjunganData]);
+            hideLoading();
+
+            if (error) {
+                console.error('Error:', error);
+                showNotification('Gagal mendaftarkan kunjungan', 'error');
+                return;
+            }
+
+            // Show success modal
+            document.getElementById('nomorAntreanSukses').textContent = nomorAntrean;
+            document.getElementById('poliSukses').textContent = poliData.nama;
+            document.getElementById('jenisBayarSukses').textContent = jenisBayar;
+            document.getElementById('modalSuksesDaftar').classList.add('active');
+
+            // Reset form
+            e.target.reset();
+            document.getElementById('infoPasienKunjungan').classList.add('hidden');
+            document.getElementById('formKunjungan').classList.add('hidden');
+            document.getElementById('searchPasienKunjungan').value = '';
+
+            // Reload statistics
+            await loadStatistik();
+            await loadAntrean();
+        });
+
+        // ============================================
+        // REALTIME SUBSCRIPTION
+        // ============================================
+        function setupRealtimeSubscription() {
+            supabase
+                .channel('kunjungan-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'kunjungan' }, () => {
+                    loadStatistik();
+                    loadAntrean();
+                })
+                .subscribe();
+        }
+
+        // ============================================
+        // MODAL
+        // ============================================
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+    </script>
+</body>
+</html>

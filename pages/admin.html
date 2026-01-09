@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - SIPUSKESMAS</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-hospital"></i> SIPUSKESMAS</h2>
+                <p>Admin Panel</p>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active" data-section="dashboard"><i class="fas fa-home icon"></i> Dashboard</a></li>
+                <li><a href="#" data-section="users"><i class="fas fa-users-cog icon"></i> Manajemen User</a></li>
+                <li><a href="#" data-section="poli"><i class="fas fa-clinic-medical icon"></i> Data Master Poli</a></li>
+                <li><a href="#" data-section="obat"><i class="fas fa-pills icon"></i> Data Master Obat</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <button class="btn btn-outline btn-block" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h1>Admin Panel</h1>
+                    <p id="currentDate"></p>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <div class="user-avatar" id="userAvatar">A</div>
+                        <div>
+                            <strong id="userName">Administrator</strong>
+                            <p style="font-size: 0.8rem; color: #757575;">Admin</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Sections -->
+            <div class="content">
+                <!-- Dashboard Section -->
+                <section id="section-dashboard" class="section active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon primary"><i class="fas fa-users"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalUsers">0</h4>
+                                <p>Total User</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon secondary"><i class="fas fa-clinic-medical"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalPoli">0</h4>
+                                <p>Jumlah Poli</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon warning"><i class="fas fa-pills"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalObat">0</h4>
+                                <p>Jenis Obat</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon danger"><i class="fas fa-user-injured"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalPasien">0</h4>
+                                <p>Total Pasien</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Info -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-info-circle"></i> Informasi Sistem</h3>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Nama Aplikasi:</strong> SIPUSKESMAS - Sistem Informasi Puskesmas Terpadu</p>
+                            <p><strong>Versi:</strong> 1.0.0</p>
+                            <p><strong>Backend:</strong> Supabase</p>
+                            <p class="mt-10" style="color: #757575;">Untuk menggunakan sistem ini, pastikan Anda sudah menjalankan SQL schema di Supabase dan mengkonfigurasi kredensial di file <code>js/config.js</code></p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Manajemen User Section -->
+                <section id="section-users" class="section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-users-cog"></i> Manajemen User</h3>
+                            <button class="btn btn-primary" onclick="openModalUser()">
+                                <i class="fas fa-plus"></i> Tambah User
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Nama</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Poli</th>
+                                            <th>Status</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelUsers">
+                                        <tr><td colspan="6" class="text-center">Memuat data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Master Poli Section -->
+                <section id="section-poli" class="section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-clinic-medical"></i> Data Master Poli</h3>
+                            <button class="btn btn-primary" onclick="openModalPoli()">
+                                <i class="fas fa-plus"></i> Tambah Poli
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Nama Poli</th>
+                                            <th>Deskripsi</th>
+                                            <th>Status</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelPoli">
+                                        <tr><td colspan="4" class="text-center">Memuat data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Master Obat Section -->
+                <section id="section-obat" class="section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-pills"></i> Data Master Obat</h3>
+                            <button class="btn btn-primary" onclick="openModalObat()">
+                                <i class="fas fa-plus"></i> Tambah Obat
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="search-box mb-20">
+                                <input type="text" id="searchObat" placeholder="Cari obat..." onkeyup="filterObat()">
+                            </div>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Kode</th>
+                                            <th>Nama Obat</th>
+                                            <th>Satuan</th>
+                                            <th>Harga</th>
+                                            <th>Stok</th>
+                                            <th>Status</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelObat">
+                                        <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Tambah/Edit User -->
+    <div id="modalUser" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> <span id="modalUserTitle">Tambah User</span></h3>
+                <button class="modal-close" onclick="closeModal('modalUser')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="formUser">
+                    <input type="hidden" id="userId">
+                    <div class="form-group">
+                        <label>Nama Lengkap *</label>
+                        <input type="text" id="userNama" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" id="userEmail" required>
+                    </div>
+                    <div class="form-group" id="passwordGroup">
+                        <label>Password *</label>
+                        <input type="password" id="userPassword" minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label>Role *</label>
+                        <select id="userRole" required onchange="togglePoliSelect()">
+                            <option value="">-- Pilih Role --</option>
+                            <option value="admin">Admin</option>
+                            <option value="pendaftaran">Petugas Pendaftaran</option>
+                            <option value="dokter">Dokter</option>
+                            <option value="apoteker">Apoteker</option>
+                            <option value="kepala">Kepala Puskesmas</option>
+                        </select>
+                    </div>
+                    <div class="form-group hidden" id="poliGroup">
+                        <label>Poli (untuk Dokter)</label>
+                        <select id="userPoli">
+                            <option value="">-- Pilih Poli --</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="submitUser()">
+                    <i class="fas fa-save"></i> Simpan
+                </button>
+                <button class="btn btn-outline" onclick="closeModal('modalUser')">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tambah/Edit Poli -->
+    <div id="modalPoli" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-clinic-medical"></i> <span id="modalPoliTitle">Tambah Poli</span></h3>
+                <button class="modal-close" onclick="closeModal('modalPoli')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="formPoli">
+                    <input type="hidden" id="poliId">
+                    <div class="form-group">
+                        <label>Nama Poli *</label>
+                        <input type="text" id="poliNama" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Deskripsi</label>
+                        <textarea id="poliDeskripsi" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="poliStatus">
+                            <option value="true">Aktif</option>
+                            <option value="false">Tidak Aktif</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="submitPoli()">
+                    <i class="fas fa-save"></i> Simpan
+                </button>
+                <button class="btn btn-outline" onclick="closeModal('modalPoli')">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tambah/Edit Obat -->
+    <div id="modalObat" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-pills"></i> <span id="modalObatTitle">Tambah Obat</span></h3>
+                <button class="modal-close" onclick="closeModal('modalObat')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="formObat">
+                    <input type="hidden" id="obatId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Kode Obat</label>
+                            <input type="text" id="obatKode" placeholder="OBT001">
+                        </div>
+                        <div class="form-group">
+                            <label>Nama Obat *</label>
+                            <input type="text" id="obatNama" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Satuan *</label>
+                            <select id="obatSatuan" required>
+                                <option value="">-- Pilih --</option>
+                                <option value="Tablet">Tablet</option>
+                                <option value="Kapsul">Kapsul</option>
+                                <option value="Botol">Botol</option>
+                                <option value="Ampul">Ampul</option>
+                                <option value="Tube">Tube</option>
+                                <option value="Sachet">Sachet</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Harga (Rp)</label>
+                            <input type="number" id="obatHarga" min="0">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Stok Awal</label>
+                            <input type="number" id="obatStok" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="obatStatus">
+                                <option value="true">Aktif</option>
+                                <option value="false">Tidak Aktif</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="submitObat()">
+                    <i class="fas fa-save"></i> Simpan
+                </button>
+                <button class="btn btn-outline" onclick="closeModal('modalObat')">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script>
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        let obatList = [];
+        let poliList = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Protect page
+            const isAllowed = await protectPage(['admin']);
+            if (!isAllowed) return;
+
+            // Get user data
+            const userData = await getUserRole();
+            if (userData) {
+                document.getElementById('userName').textContent = userData.nama;
+                document.getElementById('userAvatar').textContent = userData.nama.charAt(0).toUpperCase();
+            }
+
+            // Set current date
+            document.getElementById('currentDate').textContent = formatTanggal(new Date());
+
+            // Load data
+            await loadDashboardStats();
+            await loadPoliList();
+
+            // Setup menu navigation
+            setupNavigation();
+        });
+
+        // ============================================
+        // NAVIGATION
+        // ============================================
+        function setupNavigation() {
+            const menuItems = document.querySelectorAll('.sidebar-menu a');
+            menuItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = item.dataset.section;
+                    showSection(section);
+                    
+                    menuItems.forEach(m => m.classList.remove('active'));
+                    item.classList.add('active');
+                });
+            });
+        }
+
+        function showSection(sectionName) {
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`section-${sectionName}`).classList.remove('hidden');
+
+            if (sectionName === 'users') loadUsers();
+            if (sectionName === 'poli') loadPoli();
+            if (sectionName === 'obat') loadObat();
+        }
+
+        // ============================================
+        // DASHBOARD
+        // ============================================
+        async function loadDashboardStats() {
+            const { count: users } = await supabase.from('users').select('*', { count: 'exact', head: true });
+            const { count: poli } = await supabase.from('poli').select('*', { count: 'exact', head: true });
+            const { count: obat } = await supabase.from('obat').select('*', { count: 'exact', head: true });
+            const { count: pasien } = await supabase.from('pasien').select('*', { count: 'exact', head: true });
+
+            document.getElementById('totalUsers').textContent = users || 0;
+            document.getElementById('totalPoli').textContent = poli || 0;
+            document.getElementById('totalObat').textContent = obat || 0;
+            document.getElementById('totalPasien').textContent = pasien || 0;
+        }
+
+        async function loadPoliList() {
+            const { data } = await supabase.from('poli').select('*').eq('aktif', true);
+            poliList = data || [];
+            
+            const select = document.getElementById('userPoli');
+            select.innerHTML = '<option value="">-- Pilih Poli --</option>';
+            poliList.forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.nama}</option>`;
+            });
+        }
+
+        // ============================================
+        // USER MANAGEMENT
+        // ============================================
+        async function loadUsers() {
+            const { data, error } = await supabase
+                .from('users')
+                .select('*, poli:poli_id(nama)')
+                .order('nama');
+
+            const tbody = document.getElementById('tabelUsers');
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada data user</td></tr>';
+                return;
+            }
+
+            const roleLabels = {
+                'admin': 'Administrator',
+                'pendaftaran': 'Petugas Pendaftaran',
+                'dokter': 'Dokter',
+                'apoteker': 'Apoteker',
+                'kepala': 'Kepala Puskesmas'
+            };
+
+            tbody.innerHTML = data.map(user => `
+                <tr>
+                    <td>${user.nama}</td>
+                    <td>${user.email}</td>
+                    <td><span class="badge badge-primary">${roleLabels[user.role] || user.role}</span></td>
+                    <td>${user.poli?.nama || '-'}</td>
+                    <td><span class="badge badge-success">Aktif</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" onclick="editUser('${user.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function togglePoliSelect() {
+            const role = document.getElementById('userRole').value;
+            const poliGroup = document.getElementById('poliGroup');
+            
+            if (role === 'dokter') {
+                poliGroup.classList.remove('hidden');
+            } else {
+                poliGroup.classList.add('hidden');
+            }
+        }
+
+        function openModalUser() {
+            document.getElementById('formUser').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('modalUserTitle').textContent = 'Tambah User';
+            document.getElementById('passwordGroup').classList.remove('hidden');
+            document.getElementById('userPassword').required = true;
+            document.getElementById('poliGroup').classList.add('hidden');
+            document.getElementById('modalUser').classList.add('active');
+        }
+
+        async function editUser(userId) {
+            const { data: user } = await supabase.from('users').select('*').eq('id', userId).single();
+            if (!user) return;
+
+            document.getElementById('userId').value = user.id;
+            document.getElementById('userNama').value = user.nama;
+            document.getElementById('userEmail').value = user.email;
+            document.getElementById('userRole').value = user.role;
+            document.getElementById('userPoli').value = user.poli_id || '';
+            document.getElementById('modalUserTitle').textContent = 'Edit User';
+            document.getElementById('passwordGroup').classList.add('hidden');
+            document.getElementById('userPassword').required = false;
+            
+            togglePoliSelect();
+            document.getElementById('modalUser').classList.add('active');
+        }
+
+        async function submitUser() {
+            const userId = document.getElementById('userId').value;
+            const nama = document.getElementById('userNama').value;
+            const email = document.getElementById('userEmail').value;
+            const password = document.getElementById('userPassword').value;
+            const role = document.getElementById('userRole').value;
+            const poliId = document.getElementById('userPoli').value || null;
+
+            if (!nama || !email || !role) {
+                showNotification('Lengkapi semua field wajib', 'warning');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                if (userId) {
+                    // Update existing user
+                    const { error } = await supabase
+                        .from('users')
+                        .update({ nama, role, poli_id: poliId })
+                        .eq('id', userId);
+
+                    if (error) throw error;
+                    showNotification('User berhasil diupdate', 'success');
+                } else {
+                    // Create new user
+                    if (!password || password.length < 6) {
+                        hideLoading();
+                        showNotification('Password minimal 6 karakter', 'warning');
+                        return;
+                    }
+
+                    // Create auth user
+                    const { data: authData, error: authError } = await supabase.auth.signUp({
+                        email,
+                        password
+                    });
+
+                    if (authError) throw authError;
+
+                    // Create user profile
+                    const { error: profileError } = await supabase
+                        .from('users')
+                        .insert([{
+                            id: authData.user.id,
+                            email,
+                            nama,
+                            role,
+                            poli_id: poliId
+                        }]);
+
+                    if (profileError) throw profileError;
+                    showNotification('User berhasil ditambahkan', 'success');
+                }
+
+                closeModal('modalUser');
+                await loadUsers();
+                await loadDashboardStats();
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification(error.message || 'Gagal menyimpan user', 'error');
+            }
+
+            hideLoading();
+        }
+
+        // ============================================
+        // POLI MANAGEMENT
+        // ============================================
+        async function loadPoli() {
+            const { data, error } = await supabase.from('poli').select('*').order('nama');
+
+            const tbody = document.getElementById('tabelPoli');
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data poli</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(poli => `
+                <tr>
+                    <td>${poli.nama}</td>
+                    <td>${poli.deskripsi || '-'}</td>
+                    <td><span class="badge ${poli.aktif ? 'badge-success' : 'badge-danger'}">${poli.aktif ? 'Aktif' : 'Tidak Aktif'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" onclick="editPoli('${poli.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openModalPoli() {
+            document.getElementById('formPoli').reset();
+            document.getElementById('poliId').value = '';
+            document.getElementById('modalPoliTitle').textContent = 'Tambah Poli';
+            document.getElementById('modalPoli').classList.add('active');
+        }
+
+        async function editPoli(poliId) {
+            const { data: poli } = await supabase.from('poli').select('*').eq('id', poliId).single();
+            if (!poli) return;
+
+            document.getElementById('poliId').value = poli.id;
+            document.getElementById('poliNama').value = poli.nama;
+            document.getElementById('poliDeskripsi').value = poli.deskripsi || '';
+            document.getElementById('poliStatus').value = poli.aktif.toString();
+            document.getElementById('modalPoliTitle').textContent = 'Edit Poli';
+            document.getElementById('modalPoli').classList.add('active');
+        }
+
+        async function submitPoli() {
+            const poliId = document.getElementById('poliId').value;
+            const nama = document.getElementById('poliNama').value;
+            const deskripsi = document.getElementById('poliDeskripsi').value;
+            const aktif = document.getElementById('poliStatus').value === 'true';
+
+            if (!nama) {
+                showNotification('Nama poli wajib diisi', 'warning');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                if (poliId) {
+                    const { error } = await supabase
+                        .from('poli')
+                        .update({ nama, deskripsi, aktif })
+                        .eq('id', poliId);
+                    if (error) throw error;
+                    showNotification('Poli berhasil diupdate', 'success');
+                } else {
+                    const { error } = await supabase
+                        .from('poli')
+                        .insert([{ nama, deskripsi, aktif }]);
+                    if (error) throw error;
+                    showNotification('Poli berhasil ditambahkan', 'success');
+                }
+
+                closeModal('modalPoli');
+                await loadPoli();
+                await loadPoliList();
+                await loadDashboardStats();
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Gagal menyimpan poli', 'error');
+            }
+
+            hideLoading();
+        }
+
+        // ============================================
+        // OBAT MANAGEMENT
+        // ============================================
+        async function loadObat() {
+            const { data, error } = await supabase.from('obat').select('*').order('nama');
+
+            const tbody = document.getElementById('tabelObat');
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data obat</td></tr>';
+                return;
+            }
+
+            obatList = data;
+            renderObatTable(data);
+        }
+
+        function renderObatTable(data) {
+            const tbody = document.getElementById('tabelObat');
+            tbody.innerHTML = data.map(obat => `
+                <tr>
+                    <td>${obat.kode || '-'}</td>
+                    <td>${obat.nama}</td>
+                    <td>${obat.satuan}</td>
+                    <td>Rp ${obat.harga?.toLocaleString('id-ID') || '-'}</td>
+                    <td><strong>${obat.stok}</strong></td>
+                    <td><span class="badge ${obat.aktif ? 'badge-success' : 'badge-danger'}">${obat.aktif ? 'Aktif' : 'Tidak Aktif'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" onclick="editObat('${obat.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterObat() {
+            const keyword = document.getElementById('searchObat').value.toLowerCase();
+            const filtered = obatList.filter(o => o.nama.toLowerCase().includes(keyword));
+            renderObatTable(filtered);
+        }
+
+        function openModalObat() {
+            document.getElementById('formObat').reset();
+            document.getElementById('obatId').value = '';
+            document.getElementById('obatStok').value = '0';
+            document.getElementById('modalObatTitle').textContent = 'Tambah Obat';
+            document.getElementById('modalObat').classList.add('active');
+        }
+
+        async function editObat(obatId) {
+            const { data: obat } = await supabase.from('obat').select('*').eq('id', obatId).single();
+            if (!obat) return;
+
+            document.getElementById('obatId').value = obat.id;
+            document.getElementById('obatKode').value = obat.kode || '';
+            document.getElementById('obatNama').value = obat.nama;
+            document.getElementById('obatSatuan').value = obat.satuan;
+            document.getElementById('obatHarga').value = obat.harga || '';
+            document.getElementById('obatStok').value = obat.stok;
+            document.getElementById('obatStatus').value = obat.aktif.toString();
+            document.getElementById('modalObatTitle').textContent = 'Edit Obat';
+            document.getElementById('modalObat').classList.add('active');
+        }
+
+        async function submitObat() {
+            const obatId = document.getElementById('obatId').value;
+            const kode = document.getElementById('obatKode').value;
+            const nama = document.getElementById('obatNama').value;
+            const satuan = document.getElementById('obatSatuan').value;
+            const harga = parseInt(document.getElementById('obatHarga').value) || 0;
+            const stok = parseInt(document.getElementById('obatStok').value) || 0;
+            const aktif = document.getElementById('obatStatus').value === 'true';
+
+            if (!nama || !satuan) {
+                showNotification('Nama dan satuan obat wajib diisi', 'warning');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                if (obatId) {
+                    const { error } = await supabase
+                        .from('obat')
+                        .update({ kode, nama, satuan, harga, stok, aktif })
+                        .eq('id', obatId);
+                    if (error) throw error;
+                    showNotification('Obat berhasil diupdate', 'success');
+                } else {
+                    const { error } = await supabase
+                        .from('obat')
+                        .insert([{ kode, nama, satuan, harga, stok, aktif }]);
+                    if (error) throw error;
+                    showNotification('Obat berhasil ditambahkan', 'success');
+                }
+
+                closeModal('modalObat');
+                await loadObat();
+                await loadDashboardStats();
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Gagal menyimpan obat', 'error');
+            }
+
+            hideLoading();
+        }
+
+        // ============================================
+        // MODAL
+        // ============================================
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+    </script>
+</body>
+</html>

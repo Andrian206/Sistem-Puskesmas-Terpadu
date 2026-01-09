@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modul Farmasi - SIPUSKESMAS</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-hospital"></i> SIPUSKESMAS</h2>
+                <p>Modul Farmasi</p>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active" data-section="dashboard"><i class="fas fa-home icon"></i> Dashboard</a></li>
+                <li><a href="#" data-section="resep"><i class="fas fa-prescription icon"></i> Resep Masuk</a></li>
+                <li><a href="#" data-section="stok"><i class="fas fa-boxes icon"></i> Stok Obat</a></li>
+                <li><a href="#" data-section="riwayat"><i class="fas fa-history icon"></i> Riwayat Penyerahan</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <button class="btn btn-outline btn-block" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h1>Farmasi / Apotek</h1>
+                    <p id="currentDate"></p>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <div class="user-avatar" id="userAvatar">A</div>
+                        <div>
+                            <strong id="userName">Apoteker</strong>
+                            <p style="font-size: 0.8rem; color: #757575;">Farmasi</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Sections -->
+            <div class="content">
+                <!-- Dashboard Section -->
+                <section id="section-dashboard" class="section active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon primary"><i class="fas fa-prescription"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalResepMasuk">0</h4>
+                                <p>Resep Menunggu</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon secondary"><i class="fas fa-check-double"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalDiserahkan">0</h4>
+                                <p>Diserahkan Hari Ini</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon warning"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalStokKritis">0</h4>
+                                <p>Stok Kritis</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon danger"><i class="fas fa-pills"></i></div>
+                            <div class="stat-info">
+                                <h4 id="totalJenisObat">0</h4>
+                                <p>Jenis Obat</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resep Terbaru -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-bell"></i> Resep Masuk Terbaru</h3>
+                            <button class="btn btn-sm btn-outline" onclick="loadResepDashboard()">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="resepDashboard" class="queue-list">
+                                <div class="empty-state">
+                                    <i class="fas fa-inbox icon"></i>
+                                    <h4>Tidak Ada Resep</h4>
+                                    <p>Resep dari dokter akan muncul di sini</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Obat Stok Kritis -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-exclamation-circle"></i> Obat Stok Kritis (< 20)</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Nama Obat</th>
+                                            <th>Satuan</th>
+                                            <th>Stok</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelStokKritis">
+                                        <tr>
+                                            <td colspan="4" class="text-center">Memuat data...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Resep Masuk Section -->
+                <section id="section-resep" class="section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-prescription"></i> Daftar Resep Menunggu</h3>
+                            <button class="btn btn-sm btn-outline" onclick="loadResepFull()">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>No. Antrean</th>
+                                            <th>Nama Pasien</th>
+                                            <th>Jenis Bayar</th>
+                                            <th>Jumlah Obat</th>
+                                            <th>Waktu</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelResep">
+                                        <tr>
+                                            <td colspan="6" class="text-center">Memuat data...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Stok Obat Section -->
+                <section id="section-stok" class="section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-boxes"></i> Inventaris Obat</h3>
+                            <button class="btn btn-sm btn-primary" onclick="openModalTambahStok()">
+                                <i class="fas fa-plus"></i> Update Stok
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="search-box mb-20">
+                                <input type="text" id="searchObat" placeholder="Cari obat..." onkeyup="filterObat()">
+                            </div>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Kode</th>
+                                            <th>Nama Obat</th>
+                                            <th>Satuan</th>
+                                            <th>Stok</th>
+                                            <th>Harga</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelObat">
+                                        <tr>
+                                            <td colspan="6" class="text-center">Memuat data...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Riwayat Penyerahan Section -->
+                <section id="section-riwayat" class="section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-history"></i> Riwayat Penyerahan Obat</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="filter-group">
+                                <input type="date" id="filterTanggal" value="">
+                                <button class="btn btn-primary" onclick="loadRiwayatPenyerahan()">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                            </div>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Waktu</th>
+                                            <th>No. Antrean</th>
+                                            <th>Nama Pasien</th>
+                                            <th>Obat</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelRiwayat">
+                                        <tr>
+                                            <td colspan="5" class="text-center">Pilih tanggal untuk melihat riwayat</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Detail Resep -->
+    <div id="modalDetailResep" class="modal-overlay">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-prescription"></i> Detail Resep</h3>
+                <button class="modal-close" onclick="closeModal('modalDetailResep')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Info Pasien -->
+                <div style="background: #E3F2FD; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div class="form-row">
+                        <div><strong>No. Antrean:</strong> <span id="detailAntrean">-</span></div>
+                        <div><strong>Nama:</strong> <span id="detailNama">-</span></div>
+                        <div><strong>Jenis Bayar:</strong> <span id="detailBayar">-</span></div>
+                    </div>
+                    <div class="mt-10">
+                        <strong>Diagnosis:</strong> <span id="detailDiagnosis">-</span>
+                    </div>
+                </div>
+
+                <!-- Daftar Obat -->
+                <h4 style="margin-bottom: 15px;"><i class="fas fa-pills"></i> Daftar Obat</h4>
+                <div id="detailObatList">
+                    <!-- Obat items -->
+                </div>
+
+                <!-- Alert Stok -->
+                <div id="alertStok" class="hidden" style="background: #FFEBEE; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                    <p style="color: #C62828;"><i class="fas fa-exclamation-triangle"></i> <strong>Peringatan:</strong> Beberapa obat tidak tersedia atau stok tidak mencukupi!</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <input type="hidden" id="detailKunjunganId">
+                <button class="btn btn-success" id="btnSerahkan" onclick="serahkanObat()">
+                    <i class="fas fa-check"></i> Serahkan Obat
+                </button>
+                <button class="btn btn-outline" onclick="closeModal('modalDetailResep')">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Update Stok -->
+    <div id="modalUpdateStok" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-boxes"></i> Update Stok Obat</h3>
+                <button class="modal-close" onclick="closeModal('modalUpdateStok')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="formUpdateStok">
+                    <div class="form-group">
+                        <label>Pilih Obat *</label>
+                        <select id="selectObatUpdate" required>
+                            <option value="">-- Pilih Obat --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Stok Saat Ini</label>
+                        <input type="text" id="stokSaatIni" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>Tambah Stok *</label>
+                        <input type="number" id="tambahStok" min="1" required placeholder="Jumlah stok yang ditambahkan">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="submitUpdateStok()">
+                    <i class="fas fa-save"></i> Update Stok
+                </button>
+                <button class="btn btn-outline" onclick="closeModal('modalUpdateStok')">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script>
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        let obatList = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Protect page
+            const isAllowed = await protectPage(['apoteker', 'admin']);
+            if (!isAllowed) return;
+
+            // Get user data
+            const userData = await getUserRole();
+            if (userData) {
+                document.getElementById('userName').textContent = userData.nama;
+                document.getElementById('userAvatar').textContent = userData.nama.charAt(0).toUpperCase();
+            }
+
+            // Set current date
+            document.getElementById('currentDate').textContent = formatTanggal(new Date());
+            document.getElementById('filterTanggal').value = new Date().toISOString().split('T')[0];
+
+            // Load data
+            await loadObat();
+            await loadStatistik();
+            await loadResepDashboard();
+            await loadStokKritis();
+
+            // Setup realtime subscription
+            setupRealtimeSubscription();
+
+            // Setup menu navigation
+            setupNavigation();
+        });
+
+        // ============================================
+        // NAVIGATION
+        // ============================================
+        function setupNavigation() {
+            const menuItems = document.querySelectorAll('.sidebar-menu a');
+            menuItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = item.dataset.section;
+                    showSection(section);
+                    
+                    menuItems.forEach(m => m.classList.remove('active'));
+                    item.classList.add('active');
+                });
+            });
+        }
+
+        function showSection(sectionName) {
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`section-${sectionName}`).classList.remove('hidden');
+            
+            if (sectionName === 'resep') loadResepFull();
+            if (sectionName === 'stok') loadObatTable();
+        }
+
+        // ============================================
+        // LOAD DATA
+        // ============================================
+        async function loadObat() {
+            const { data, error } = await supabase.from('obat').select('*').order('nama');
+            if (!error) obatList = data;
+        }
+
+        async function loadStatistik() {
+            const today = new Date().toISOString().split('T')[0];
+
+            // Resep menunggu
+            const { count: resepMasuk } = await supabase
+                .from('kunjungan')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'Menuju Farmasi');
+            document.getElementById('totalResepMasuk').textContent = resepMasuk || 0;
+
+            // Diserahkan hari ini
+            const { count: diserahkan } = await supabase
+                .from('kunjungan')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'Selesai')
+                .gte('updated_at', today);
+            document.getElementById('totalDiserahkan').textContent = diserahkan || 0;
+
+            // Stok kritis
+            const { count: stokKritis } = await supabase
+                .from('obat')
+                .select('*', { count: 'exact', head: true })
+                .lt('stok', 20)
+                .eq('aktif', true);
+            document.getElementById('totalStokKritis').textContent = stokKritis || 0;
+
+            // Total jenis obat
+            const { count: totalObat } = await supabase
+                .from('obat')
+                .select('*', { count: 'exact', head: true })
+                .eq('aktif', true);
+            document.getElementById('totalJenisObat').textContent = totalObat || 0;
+        }
+
+        async function loadStokKritis() {
+            const { data, error } = await supabase
+                .from('obat')
+                .select('*')
+                .lt('stok', 20)
+                .eq('aktif', true)
+                .order('stok');
+
+            const tbody = document.getElementById('tabelStokKritis');
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color: #2E7D32;"><i class="fas fa-check-circle"></i> Semua stok aman</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(obat => `
+                <tr>
+                    <td>${obat.nama}</td>
+                    <td>${obat.satuan}</td>
+                    <td><strong style="color: ${obat.stok < 10 ? '#D32F2F' : '#FF9800'};">${obat.stok}</strong></td>
+                    <td><span class="badge ${obat.stok < 10 ? 'badge-danger' : 'badge-warning'}">${obat.stok < 10 ? 'Kritis' : 'Rendah'}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadResepDashboard() {
+            const { data, error } = await supabase
+                .from('kunjungan')
+                .select(`
+                    *,
+                    pasien:pasien_id(nama, no_rm),
+                    resep(obat:obat_id(nama))
+                `)
+                .eq('status', 'Menuju Farmasi')
+                .order('updated_at', { ascending: true })
+                .limit(5);
+
+            const container = document.getElementById('resepDashboard');
+
+            if (error || !data || data.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox icon"></i>
+                        <h4>Tidak Ada Resep</h4>
+                        <p>Resep dari dokter akan muncul di sini</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.map(item => `
+                <div class="queue-item">
+                    <div class="queue-number">${item.nomor_antrean}</div>
+                    <div class="queue-info">
+                        <h4>${item.pasien.nama}</h4>
+                        <p>${item.resep?.length || 0} item obat | ${item.jenis_bayar}</p>
+                    </div>
+                    <div class="queue-actions">
+                        <button class="btn btn-sm btn-primary" onclick="lihatDetailResep('${item.id}')">
+                            <i class="fas fa-eye"></i> Detail
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadResepFull() {
+            const { data, error } = await supabase
+                .from('kunjungan')
+                .select(`
+                    *,
+                    pasien:pasien_id(nama, no_rm),
+                    resep(id)
+                `)
+                .eq('status', 'Menuju Farmasi')
+                .order('updated_at', { ascending: true });
+
+            const tbody = document.getElementById('tabelResep');
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada resep menunggu</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td><strong>${item.nomor_antrean}</strong></td>
+                    <td>${item.pasien.nama}</td>
+                    <td><span class="badge ${item.jenis_bayar === 'BPJS' ? 'badge-info' : 'badge-warning'}">${item.jenis_bayar}</span></td>
+                    <td>${item.resep?.length || 0} item</td>
+                    <td>${new Date(item.updated_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="lihatDetailResep('${item.id}')">
+                            <i class="fas fa-eye"></i> Detail
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadObatTable() {
+            const { data, error } = await supabase.from('obat').select('*').eq('aktif', true).order('nama');
+
+            const tbody = document.getElementById('tabelObat');
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada data obat</td></tr>';
+                return;
+            }
+
+            obatList = data;
+            renderObatTable(data);
+        }
+
+        function renderObatTable(data) {
+            const tbody = document.getElementById('tabelObat');
+            tbody.innerHTML = data.map(obat => {
+                let statusClass = 'badge-success';
+                let statusText = 'Tersedia';
+                if (obat.stok < 10) {
+                    statusClass = 'badge-danger';
+                    statusText = 'Kritis';
+                } else if (obat.stok < 20) {
+                    statusClass = 'badge-warning';
+                    statusText = 'Rendah';
+                }
+
+                return `
+                    <tr>
+                        <td>${obat.kode || '-'}</td>
+                        <td>${obat.nama}</td>
+                        <td>${obat.satuan}</td>
+                        <td><strong>${obat.stok}</strong></td>
+                        <td>Rp ${obat.harga?.toLocaleString('id-ID') || '-'}</td>
+                        <td><span class="badge ${statusClass}">${statusText}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterObat() {
+            const keyword = document.getElementById('searchObat').value.toLowerCase();
+            const filtered = obatList.filter(o => o.nama.toLowerCase().includes(keyword));
+            renderObatTable(filtered);
+        }
+
+        async function loadRiwayatPenyerahan() {
+            const tanggal = document.getElementById('filterTanggal').value;
+            if (!tanggal) {
+                showNotification('Pilih tanggal', 'warning');
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('kunjungan')
+                .select(`
+                    *,
+                    pasien:pasien_id(nama),
+                    resep(obat:obat_id(nama), jumlah)
+                `)
+                .eq('status', 'Selesai')
+                .gte('updated_at', tanggal)
+                .lte('updated_at', tanggal + 'T23:59:59')
+                .order('updated_at', { ascending: false });
+
+            const tbody = document.getElementById('tabelRiwayat');
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada data pada tanggal tersebut</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                const obatText = item.resep?.map(r => `${r.obat.nama} (${r.jumlah})`).join(', ') || '-';
+                return `
+                    <tr>
+                        <td>${new Date(item.updated_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</td>
+                        <td>${item.nomor_antrean}</td>
+                        <td>${item.pasien.nama}</td>
+                        <td style="max-width: 300px;">${obatText}</td>
+                        <td><span class="badge badge-success">Diserahkan</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ============================================
+        // DETAIL RESEP & PENYERAHAN
+        // ============================================
+        async function lihatDetailResep(kunjunganId) {
+            showLoading();
+
+            const { data: kunjungan, error } = await supabase
+                .from('kunjungan')
+                .select(`
+                    *,
+                    pasien:pasien_id(nama, no_rm),
+                    rekam_medis(diagnosis),
+                    resep(*, obat:obat_id(*))
+                `)
+                .eq('id', kunjunganId)
+                .single();
+
+            hideLoading();
+
+            if (error || !kunjungan) {
+                showNotification('Gagal memuat data resep', 'error');
+                return;
+            }
+
+            // Fill modal
+            document.getElementById('detailKunjunganId').value = kunjunganId;
+            document.getElementById('detailAntrean').textContent = kunjungan.nomor_antrean;
+            document.getElementById('detailNama').textContent = kunjungan.pasien.nama;
+            document.getElementById('detailBayar').textContent = kunjungan.jenis_bayar;
+            document.getElementById('detailDiagnosis').textContent = kunjungan.rekam_medis?.[0]?.diagnosis || '-';
+
+            // Render obat list
+            const obatContainer = document.getElementById('detailObatList');
+            let hasStokIssue = false;
+
+            obatContainer.innerHTML = kunjungan.resep.map(r => {
+                const stokCukup = r.obat.stok >= r.jumlah;
+                if (!stokCukup) hasStokIssue = true;
+
+                return `
+                    <div class="prescription-item" style="border-left: 4px solid ${stokCukup ? '#4CAF50' : '#D32F2F'};">
+                        <div class="prescription-info" style="flex: 1;">
+                            <h5>${r.obat.nama}</h5>
+                            <p>Jumlah: ${r.jumlah} ${r.obat.satuan} | Aturan: ${r.aturan_pakai || '-'}</p>
+                            <p>Stok tersedia: <strong style="color: ${stokCukup ? '#2E7D32' : '#D32F2F'};">${r.obat.stok}</strong></p>
+                        </div>
+                        <span class="badge ${stokCukup ? 'badge-success' : 'badge-danger'}">${stokCukup ? 'OK' : 'Stok Kurang'}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Show/hide alert
+            document.getElementById('alertStok').classList.toggle('hidden', !hasStokIssue);
+            document.getElementById('btnSerahkan').disabled = hasStokIssue;
+
+            // Show modal
+            document.getElementById('modalDetailResep').classList.add('active');
+        }
+
+        async function serahkanObat() {
+            const kunjunganId = document.getElementById('detailKunjunganId').value;
+            showLoading();
+
+            // Get resep items
+            const { data: resepItems } = await supabase
+                .from('resep')
+                .select('*, obat:obat_id(*)')
+                .eq('kunjungan_id', kunjunganId);
+
+            // Update stok obat
+            for (const item of resepItems) {
+                const newStok = item.obat.stok - item.jumlah;
+                await supabase.from('obat').update({ stok: newStok }).eq('id', item.obat_id);
+                await supabase.from('resep').update({ status: 'Diserahkan' }).eq('id', item.id);
+            }
+
+            // Update kunjungan status
+            await supabase.from('kunjungan').update({ status: 'Selesai' }).eq('id', kunjunganId);
+
+            hideLoading();
+            closeModal('modalDetailResep');
+            showNotification('Obat berhasil diserahkan', 'success');
+
+            // Reload data
+            await loadStatistik();
+            await loadResepDashboard();
+            await loadStokKritis();
+            await loadObat();
+        }
+
+        // ============================================
+        // UPDATE STOK
+        // ============================================
+        function openModalTambahStok() {
+            const select = document.getElementById('selectObatUpdate');
+            select.innerHTML = '<option value="">-- Pilih Obat --</option>' + 
+                obatList.map(o => `<option value="${o.id}" data-stok="${o.stok}">${o.nama} (Stok: ${o.stok})</option>`).join('');
+            
+            select.onchange = function() {
+                const selected = this.options[this.selectedIndex];
+                document.getElementById('stokSaatIni').value = selected.dataset.stok || '';
+            };
+
+            document.getElementById('tambahStok').value = '';
+            document.getElementById('stokSaatIni').value = '';
+            document.getElementById('modalUpdateStok').classList.add('active');
+        }
+
+        async function submitUpdateStok() {
+            const obatId = document.getElementById('selectObatUpdate').value;
+            const tambah = parseInt(document.getElementById('tambahStok').value);
+            const stokSaatIni = parseInt(document.getElementById('stokSaatIni').value);
+
+            if (!obatId || !tambah) {
+                showNotification('Lengkapi form', 'warning');
+                return;
+            }
+
+            showLoading();
+            const newStok = stokSaatIni + tambah;
+            const { error } = await supabase.from('obat').update({ stok: newStok }).eq('id', obatId);
+            hideLoading();
+
+            if (error) {
+                showNotification('Gagal update stok', 'error');
+                return;
+            }
+
+            closeModal('modalUpdateStok');
+            showNotification('Stok berhasil diupdate', 'success');
+            await loadObat();
+            await loadObatTable();
+            await loadStokKritis();
+            await loadStatistik();
+        }
+
+        // ============================================
+        // MODAL
+        // ============================================
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // ============================================
+        // REALTIME SUBSCRIPTION
+        // ============================================
+        function setupRealtimeSubscription() {
+            supabase
+                .channel('farmasi-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'kunjungan' }, () => {
+                    loadStatistik();
+                    loadResepDashboard();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'obat' }, () => {
+                    loadStokKritis();
+                    loadObat();
+                })
+                .subscribe();
+        }
+    </script>
+</body>
+</html>
