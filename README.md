@@ -2,191 +2,108 @@
 
 Sistem informasi berbasis web untuk mendigitalkan seluruh alur pelayanan kesehatan di Puskesmas, mulai dari pendaftaran pasien hingga manajemen farmasi.
 
-## 🏥 Fitur Utama
+# SIPUSKESMAS — Sistem Informasi Puskesmas Terpadu
 
-### 1. Modul Pendaftaran (Petugas Pendaftaran)
-- ✅ Registrasi pasien baru dengan NIK
-- ✅ Verifikasi pasien lama (mencegah duplikasi)
-- ✅ Pendaftaran kunjungan dengan pilihan Poli dan jenis bayar (BPJS/Umum)
-- ✅ Generate nomor antrean otomatis
-- ✅ Dashboard statistik harian
+## Deskripsi
 
-### 2. Modul Pemeriksaan (Dokter)
-- ✅ Melihat daftar antrean pasien sesuai poli
-- ✅ Akses riwayat medis pasien sebelumnya
-- ✅ Input tanda vital (tekanan darah, suhu, nadi, BB)
-- ✅ Input diagnosis (anamnesa, pemeriksaan fisik, diagnosis)
-- ✅ E-Resep dengan pilihan obat dari katalog
-- ✅ Realtime update antrean
+SIPUSKESMAS adalah aplikasi web untuk mendigitalisasi alur pelayanan di Puskesmas, mencakup pendaftaran pasien, pemeriksaan medis, manajemen resep dan stok farmasi, serta pelaporan untuk manajemen. Aplikasi ini ditujukan untuk petugas pendaftaran, dokter, apoteker, kepala puskesmas, dan administrator.
 
-### 3. Modul Farmasi (Apoteker)
-- ✅ Menerima resep otomatis dari dokter
-- ✅ Cek stok obat secara otomatis
-- ✅ Peringatan jika stok tidak mencukupi
-- ✅ Penyerahan obat dan pengurangan stok otomatis
-- ✅ Monitoring stok kritis
-- ✅ Update/tambah stok obat
+## Ruang Lingkup
 
-### 4. Modul Manajemen (Kepala Puskesmas)
-- ✅ Dashboard statistik (kunjungan harian/bulanan)
-- ✅ Grafik tren kunjungan 7 hari terakhir
-- ✅ Distribusi jenis bayar (BPJS vs Umum)
-- ✅ Laporan 10 penyakit terbanyak
-- ✅ Laporan pemakaian obat
-- ✅ Export data dengan filter tanggal
+- Pendaftaran pasien dan manajemen antrean
+- Rekam medis dan pencatatan pemeriksaan
+- Pembuatan resep elektronik (e‑resep)
+- Manajemen stok obat dan proses penyerahan
+- Dashboard laporan dan statistik
+- Kontrol akses berbasis peran (RBAC)
 
-### 5. Modul Admin
-- ✅ Manajemen user dengan Role-Based Access Control (RBAC)
-- ✅ Data master Poli (CRUD)
-- ✅ Data master Obat (CRUD)
-- ✅ Dashboard statistik sistem
+## Fitur Utama
 
-## 🛠️ Teknologi
+- Modul Pendaftaran: registrasi pasien, verifikasi, pembuatan kunjungan, nomor antrean
+- Modul Pemeriksaan (Dokter): antrean per poli, rekam medis, input tanda vital dan diagnosis, e‑resep
+- Modul Farmasi (Apoteker): penerimaan resep, cek dan pengurangan stok, peringatan stok kritis
+- Modul Manajemen: dashboard statistik, laporan kunjungan dan pemakaian obat
+- Modul Admin: manajemen pengguna dan data master (poli, obat)
 
-- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
-- **Backend**: Supabase (PostgreSQL + Auth + Realtime)
-- **UI Icons**: Font Awesome 6
-- **Charts**: Chart.js
+## Teknologi
 
-## 📋 Prasyarat
+- Frontend: HTML, CSS, JavaScript (vanilla)
+- Backend / Database: Supabase (PostgreSQL, Auth, Realtime)
+- Visualisasi: Chart.js
 
-1. Akun [Supabase](https://supabase.com) (gratis)
-2. Web browser modern (Chrome, Firefox, Edge)
-3. Text editor (VS Code recommended)
+## Prasyarat
 
-## 🚀 Panduan Instalasi
+1. Akun Supabase (https://supabase.com)
+2. Browser modern (Chrome, Firefox, Edge)
+3. Editor kode (VS Code direkomendasikan)
 
-### Langkah 1: Setup Supabase
+## Instalasi dan Konfigurasi
 
-1. Buat project baru di [Supabase Dashboard](https://app.supabase.com)
-2. Catat **Project URL** dan **anon public key** dari Settings > API
-3. Buka **SQL Editor** di Supabase Dashboard
-4. Copy dan jalankan seluruh isi file `database/schema.sql`
-
-### Langkah 2: Konfigurasi Aplikasi
-
-1. Buka file `js/config.js`
-2. Ganti nilai berikut dengan kredensial Supabase Anda:
+1. Buat project baru di Supabase dan catat `Project URL` serta `anon public key`.
+2. Impor skema database dengan menjalankan `database/schema.sql` di SQL Editor Supabase.
+3. Buka `js/config.js` dan set nilai konfigurasi Supabase:
 
 ```javascript
 const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
 const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 ```
 
-### Langkah 3: Buat User Pertama (Admin)
+4. Jalankan aplikasi lokal dengan membuka `index.html` di browser atau menggunakan Live Server di VS Code.
 
-**Cara 1: Melalui Supabase Dashboard**
-1. Buka Supabase Dashboard > Authentication > Users
-2. Klik "Add User" > "Create New User"
-3. Masukkan email dan password
-4. Copy User UID yang dihasilkan
-5. Buka SQL Editor, jalankan:
+## Pembuatan Akun Administrator
+
+Tambahkan user di Supabase Authentication lalu masukkan record terkait di tabel `users` dengan role `admin`. Contoh:
 
 ```sql
-INSERT INTO users (id, email, nama, role) VALUES 
-    ('2dd27550-aa14-4b9d-9bac-bd61a51c9bb6', 'admin@puskesmas.id', 'Administrator', 'admin');
+INSERT INTO users (id, email, nama, role)
+VALUES ('<USER_UID>', 'admin@puskesmas.id', 'Administrator', 'admin');
 ```
 
-**Cara 2: Melalui Aplikasi (setelah disable RLS sementara)**
-1. Disable RLS pada tabel users:
-```sql
-ALTER TABLE users DISABLE ROW LEVEL SECURITY;
-```
-2. Buka aplikasi dan daftar melalui admin panel
-3. Enable kembali RLS:
-```sql
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-```
+Catatan: jika Row Level Security (RLS) aktif, pastikan kebijakan RLS dan roles sudah dikonfigurasi sebelum pengujian fungsi administrasi.
 
-### Langkah 4: Jalankan Aplikasi
-
-1. Buka file `index.html` di browser
-2. Atau gunakan Live Server di VS Code
-3. Login dengan akun yang sudah dibuat
-
-## 👥 Demo Akun (Setelah Setup)
-
-Buat akun-akun berikut untuk testing:
-
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@puskesmas.id | password123 |
-| Pendaftaran | pendaftaran@puskesmas.id | password123 |
-| Dokter | dokter@puskesmas.id | password123 |
-| Apoteker | apoteker@puskesmas.id | password123 |
-| Kepala | kepala@puskesmas.id | password123 |
-
-## 📁 Struktur Folder
+## Struktur Proyek (ringkasan)
 
 ```
-Puskesmas/
-├── index.html              # Halaman login
-├── css/
-│   └── style.css           # Stylesheet utama
-├── js/
-│   └── config.js           # Konfigurasi Supabase
-├── pages/
-│   ├── pendaftaran.html    # Modul Pendaftaran
-│   ├── dokter.html         # Modul Dokter
-│   ├── farmasi.html        # Modul Farmasi
-│   ├── kepala.html         # Modul Kepala Puskesmas
-│   └── admin.html          # Modul Admin
-├── database/
-│   └── schema.sql          # Database schema
-└── README.md               # Dokumentasi
+index.html
+README.md
+css/
+      └── style.css
+js/
+      └── config.js
+pages/
+      ├── pendaftaran.html
+      ├── dokter.html
+      ├── farmasi.html
+      ├── kepala.html
+      └── admin.html
+database/
+      └── schema.sql
 ```
 
-## 🔐 Keamanan
+## Akun Demo (opsional)
 
-- **Authentication**: Supabase Auth dengan email/password
-- **Authorization**: Role-Based Access Control (RBAC)
-- **Row Level Security (RLS)**: Enabled pada semua tabel
-- **Data Validation**: Client-side dan database constraints
+Contoh akun pengujian (buat setelah setup Supabase):
 
-## 📊 Alur Sistem
+- Admin: admin@puskesmas.id / password123
+- Pendaftaran: pendaftaran@puskesmas.id / password123
+- Dokter: dokter@puskesmas.id / password123
+- Apoteker: apoteker@puskesmas.id / password123
+- Kepala: kepala@puskesmas.id / password123
 
-```
-[Pasien Datang]
-      ↓
-[Petugas Pendaftaran] → Registrasi/Verifikasi → Buat Kunjungan → Generate Antrean
-      ↓
-[Dokter] → Lihat Antrean → Periksa Pasien → Input Diagnosis → Buat E-Resep
-      ↓
-[Apoteker] → Terima Resep → Cek Stok → Serahkan Obat → Update Stok
-      ↓
-[Selesai]
+## Troubleshooting Singkat
 
-[Kepala Puskesmas] → Monitoring & Laporan (Read-only)
-[Admin] → Manajemen User & Data Master
-```
+- "User not found": pastikan user ada di Supabase Auth dan tabel `users`.
+- "Permission denied": cek kebijakan RLS dan role.
+- Data tidak muncul: periksa `SUPABASE_URL` dan `SUPABASE_ANON_KEY` di `js/config.js` serta console browser.
 
-## 🔧 Troubleshooting
+## Lisensi
 
-### Error: "User not found" saat login
-- Pastikan user sudah terdaftar di Supabase Auth DAN tabel users
-- Cek apakah ID di tabel users sama dengan ID di auth.users
+Proyek ini dilisensikan di bawah MIT License.
 
-### Error: "Permission denied" 
-- Cek apakah RLS policies sudah benar
-- Pastikan user memiliki role yang sesuai
+## Kontribusi
 
-### Data tidak muncul
-- Periksa console browser untuk error
-- Pastikan SUPABASE_URL dan KEY sudah benar
-- Cek koneksi internet
-
-### Realtime tidak update
-- Pastikan Realtime sudah enabled di Supabase
-- Cek apakah ada subscription error di console
-
-## 📝 Lisensi
-
-MIT License - Bebas digunakan untuk keperluan pembelajaran dan pengembangan.
-
-## 🤝 Kontribusi
-
-Silakan fork repository ini dan buat pull request untuk perbaikan atau penambahan fitur.
+Silakan fork repository dan buat pull request untuk perbaikan atau fitur baru. Untuk perubahan besar, buka isu terlebih dahulu.
 
 ---
 
-Dibuat dengan ❤️ untuk digitalisasi pelayanan kesehatan di Indonesia.
+Dokumentasi ini disusun ulang untuk kejelasan penggunaan dan persiapan deployment lokal.
