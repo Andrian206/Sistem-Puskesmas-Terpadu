@@ -2,8 +2,6 @@
 
 Sistem informasi berbasis web untuk mendigitalkan seluruh alur pelayanan kesehatan di Puskesmas, mulai dari pendaftaran pasien hingga manajemen farmasi.
 
-# SIPUSKESMAS — Sistem Informasi Puskesmas Terpadu
-
 ## Deskripsi
 
 SIPUSKESMAS adalah aplikasi web untuk mendigitalisasi alur pelayanan di Puskesmas, mencakup pendaftaran pasien, pemeriksaan medis, manajemen resep dan stok farmasi, serta pelaporan untuk manajemen. Aplikasi ini ditujukan untuk petugas pendaftaran, dokter, apoteker, kepala puskesmas, dan administrator.
